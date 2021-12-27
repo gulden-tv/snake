@@ -10,7 +10,7 @@
 #include <inttypes.h>
 #include <wchar.h>
 
-enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
+enum {LEFT=1, UP=2, RIGHT=3, DOWN=4, STOP_GAME='q'};
 enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
 
 /*
@@ -240,6 +240,9 @@ _Bool isCrash(struct snake *head) {
         if(head->x == head->tail[i].x && head->y == head->tail[i].y)
             return 1;
     return 0;
+}
+void setSpeed(struct snake *head) {
+    // ???
 }
 int main()
 {
