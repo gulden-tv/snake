@@ -242,7 +242,7 @@ _Bool isCrash(struct snake *head) {
     return 0;
 }
 void setSpeed(struct snake *head) {
-    // ???
+    // ???????
 }
 int main()
 {
