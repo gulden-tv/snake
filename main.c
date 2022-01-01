@@ -77,22 +77,22 @@ void go(struct snake_t *head) {
             if(head->x <= 0) // Циклическое движение, что бы не
                 // уходить за пределы экрана
                 head->x = max_x;
-            mvprintw(head->y, --(head->x), ch);
+            mvprintw(head->y, --(head->x), "%s", ch);
             break;
         case RIGHT:
             if(head->x >= max_x)
                 head->x = 0;
-            mvprintw(head->y, ++(head->x), ch);
+            mvprintw(head->y, ++(head->x), "%s", ch);
             break;
         case UP:
             if(head->y <= 0)
                 head->y = max_y;
-            mvprintw(--(head->y), head->x, ch);
+            mvprintw(--(head->y), head->x, "%s", ch);
             break;
         case DOWN:
             if(head->y >= max_y)
                 head->y = 0;
-            mvprintw(++(head->y), head->x, ch);
+            mvprintw(++(head->y), head->x, "%s", ch);
             break;
         default:
             break;
@@ -166,7 +166,7 @@ void goTail(struct snake_t *head) {
     for(size_t i = head->tsize-1; i>0; i--) {
         head->tail[i] = head->tail[i-1];
         if( head->tail[i].y || head->tail[i].x)
-            mvprintw(head->tail[i].y, head->tail[i].x, ch);
+            mvprintw(head->tail[i].y, head->tail[i].x, "%s", ch);
     }
     head->tail[0].x = head->x;
     head->tail[0].y = head->y;
@@ -183,7 +183,7 @@ void addTail(struct snake_t *head) {
     head->tsize++;
 }
 void printHelp(char *s) {
-    mvprintw(0, 0, s);
+    mvprintw(0, 0, "%s", s);
 }
 
 /*
@@ -200,7 +200,7 @@ void putFoodSeed(struct food *fp) {
     fp->point = '$';
     fp->enable = 1;
     spoint[0] = fp->point;
-    mvprintw(fp->y, fp->x, spoint);
+    mvprintw(fp->y, fp->x, "%s", spoint);
 }
 
 void repairSeed(struct food f[], size_t nfood, struct snake_t *head) {
@@ -208,7 +208,7 @@ void repairSeed(struct food f[], size_t nfood, struct snake_t *head) {
         for( size_t j=0; j<nfood; j++ ){
             /* Если хвост совпадает с зерном */
             if( f[j].x == head->tail[i].x && f[j].y == head->tail[i].y && f[i].enable ) {
-                mvprintw(0, 0, "Repair tail seed %d",j);
+                mvprintw(0, 0, "Repair tail seed %zu",j);
                 putFoodSeed(&f[j]);
             }
         }
@@ -216,7 +216,7 @@ void repairSeed(struct food f[], size_t nfood, struct snake_t *head) {
         for( size_t j=0; j<nfood; j++ ){
             /* Если два зерна на одной точке */
             if( i!=j && f[i].enable && f[j].enable && f[j].x == f[i].x && f[j].y == f[i].y && f[i].enable ) {
-                mvprintw(0, 0, "Repair same seed %d",j);
+                mvprintw(0, 0, "Repair same seed %zu",j);
                 putFoodSeed(&f[j]);
             }
         }
@@ -253,12 +253,12 @@ _Bool haveEat(struct snake_t *head, struct food f[]) {
 void printLevel(struct snake_t *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(0, max_x-10, "LEVEL: %d", head->tsize);
+    mvprintw(0, max_x-10, "LEVEL: %zu", head->tsize);
 }
 void printExit(struct snake_t *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %d", head->tsize);
+    mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %zu", head->tsize);
 }
 _Bool isCrash(struct snake_t *head) {
     for(size_t i=1; i<head->tsize; i++)
