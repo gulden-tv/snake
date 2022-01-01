@@ -425,8 +425,10 @@ int main(int argc, char ** argv)
             }
             if(isCrush(snakes, snake_id, last_snake_id))
             {
+
                 clearHeadlessTail(snakes[snake_id]);
                 memcpy(snakes[snake_id], snakes[last_snake_id], sizeof(snake_t));
+
                 free(snakes[last_snake_id]);
                 last_snake_id--;
             }
