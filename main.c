@@ -21,7 +21,7 @@
 enum {LEFT=0, UP, RIGHT, DOWN};
 enum { STOP_GAME=KEY_F(10), MAX_PLAYER_ID=1, MAX_SNAKES=10};
 
-enum {MAX_TAIL_SIZE=100, START_TAIL_SIZE=5, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
+enum {MAX_TAIL_SIZE=100, START_TAIL_SIZE=25, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
  char* heads="@Q0";
 
 /*
@@ -282,10 +282,12 @@ int calculateLevel(snake_t ** snakes, int last_snake_id)
     return res+1;
 }
 
-_Bool isLoop(struct snake_t *head) {
-    for(size_t i=1; i<head->tsize; i++)
+int isLoop(struct snake_t *head) {
+    for(int i=1; i<head->tsize; i++)
         if(head->x == head->tail[i].x && head->y == head->tail[i].y)
         {
+
+                        mvprintw(8,10,"inLoop = %d", i);
 
             return i;
         }
@@ -344,7 +346,7 @@ int makeSnake(snake_t ** s,  int current_max_id, int tail_size, int x, int y)
 
 void clearHeadlessTail(snake_t * snake)
 {
-    for (int i = snake->tsize; i< MAX_TAIL_SIZE; i++)
+    for (int i = 1/*snake->tsize*/; i< MAX_TAIL_SIZE; i++)
     {
         if(snake->tail[i].x == 0 && snake->tail[i].x == 0 ) ///хвост закончился
         {
@@ -421,14 +423,15 @@ int main(int argc, char ** argv)
                 clearHeadlessTail(snakes[snake_id]);
                 init(snakes[snake_id],snakes[snake_id]->tail, frac-1, x, y);
                 snakes[snake_id]->direction = dir;
-                snakes[last_snake_id]->direction = (dir+1)%4; // чтобы новая змея ползла  в другую сторону
+                snakes[last_snake_id]->direction = (dir+2)%4; // чтобы новая змея ползла  в другую сторону
             }
             if(isCrush(snakes, snake_id, last_snake_id))
             {
-
                 clearHeadlessTail(snakes[snake_id]);
-                memcpy(snakes[snake_id], snakes[last_snake_id], sizeof(snake_t));
-
+                if(snake_id != last_snake_id)
+                {
+                    memcpy(snakes[snake_id], snakes[last_snake_id], sizeof(snake_t));
+                }
                 free(snakes[last_snake_id]);
                 last_snake_id--;
             }
@@ -466,11 +469,11 @@ int main(int argc, char ** argv)
                     int dir = snakes[snake_id]->direction;
 
                     last_snake_id = makeSnake(snakes, last_snake_id, t-frac, x, y);
-                    snakes[snake_id]->tsize = frac;
+//                    snakes[snake_id]->tsize = frac;
                     clearHeadlessTail(snakes[snake_id]);
                     init(snakes[snake_id],snakes[snake_id]->tail, frac, x, y);
                     snakes[snake_id]->direction = dir;
-                    snakes[last_snake_id]->direction = (dir+1)%4; // чтобы новая змея ползла  в другую сторону
+                    snakes[last_snake_id]->direction = (dir+2)%4; // чтобы новая змея ползла  в другую сторону
                 }
             }
             if(isCrush(snakes, snake_id, last_snake_id))
