@@ -286,9 +286,6 @@ int isLoop(struct snake_t *head) {
     for(int i=1; i<head->tsize; i++)
         if(head->x == head->tail[i].x && head->y == head->tail[i].y)
         {
-
-                        mvprintw(8,10,"inLoop = %d", i);
-
             return i;
         }
     return 0;
