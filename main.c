@@ -358,16 +358,24 @@ int main(int argc, char ** argv)
 {
     int opt;
     int split_mode = 0;
+
+
+
     while((opt = getopt(argc, argv, "hs")) !=-1)
     {
-        if( 'h' == opt )
+        switch(opt)
         {
-            PRINT_USAGE;
-            exit(0);
-        }
-        else if ('s' == opt)
-        {
-            split_mode = 1;
+            case 'h':
+                PRINT_USAGE;
+                exit(0);
+                break;
+
+            case 's':
+                split_mode = 1;
+                break;
+
+            default:
+                ;
         }
     }
 
