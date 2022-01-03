@@ -17,7 +17,7 @@
 
 
 
-
+#define MIN_Y  (2)
 enum {LEFT=0, UP, RIGHT, DOWN};
 enum { STOP_GAME=KEY_F(10), MAX_PLAYER_ID=1, MAX_SNAKES=10};
 
@@ -99,13 +99,13 @@ void go(struct snake_t *head) {
             mvprintw(head->y, ++(head->x), "%c", ch);
             break;
         case UP:
-            if(head->y <= 0)
+            if(head->y <= MIN_Y)
                 head->y = max_y;
             mvprintw(--(head->y), head->x, "%c", ch);
             break;
         case DOWN:
             if(head->y >= max_y)
-                head->y = 0;
+                head->y = MIN_Y;
             mvprintw(++(head->y), head->x, "%c", ch);
             break;
         default:
