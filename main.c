@@ -238,6 +238,8 @@ _Bool haveEat(struct snake *head, struct food f[]) {
         }
     return 0;
 }
+
+
 void printLevel(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
@@ -258,6 +260,7 @@ int main()
 {
     char ch[]="*";
     int x=0, y=0, key_pressed=0;
+    int msec=100; //
     init(&snake, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
@@ -282,10 +285,16 @@ int main()
         if(haveEat(&snake, food)) {
             addTail(&snake);
             printLevel(&snake);
+            if (msec > 3) {
+                msec -= 3; // увеличиваем скорость при поедании еды
+                timeout(msec);
+            }    
         }
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
-        timeout(100); // Задержка при отрисовке
+
+        timeout(msec); // Задержка при отрисовке
+        
     }
     printExit(&snake);
     timeout(SPEED);
