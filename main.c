@@ -58,7 +58,7 @@ struct control_buttons
 }control_buttons;
 
 
-struct control_buttons default_controls[3] = {{KEY_DOWN, KEY_UP, KEY_LEFT, KEY_RIGHT}, {'s', 'w', 'a', 'd'}, {0,1,2,3}};
+struct control_buttons default_controls[MAX_PLAYER_ID+2] = {{KEY_DOWN, KEY_UP, KEY_LEFT, KEY_RIGHT}, {'s', 'w', 'a', 'd'}, {0,1,2,3}};
 
 /*
  Голова змейки содержит в себе
