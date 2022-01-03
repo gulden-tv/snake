@@ -258,6 +258,7 @@ int main()
 {
     char ch[]="*";
     int x=0, y=0, key_pressed=0;
+    int snakeDelay = 100;
     init(&snake, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
@@ -282,10 +283,11 @@ int main()
         if(haveEat(&snake, food)) {
             addTail(&snake);
             printLevel(&snake);
+            if (snakeDelay > 11) snakeDelay -= 10;
         }
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
-        timeout(100); // Задержка при отрисовке
+        timeout(snakeDelay); // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
