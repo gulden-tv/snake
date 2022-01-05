@@ -87,6 +87,7 @@ void go(struct snake *head) {
     }
     refresh();
 }
+
 void changeDirection(int32_t *new_direction, int32_t key) {
     switch (key) {
         case KEY_DOWN: // стрелка вниз
@@ -105,17 +106,20 @@ void changeDirection(int32_t *new_direction, int32_t key) {
             break;
     }
 }
+
 void initTail(struct tail t[], size_t size) {
     struct tail init_t={0,0};
     for(size_t i=0; i<size; i++) {
         t[i]=init_t;
     }
 }
+
 void initHead(struct snake *head) {
     head->x = 0;
     head->y = 2;
     head->direction = RIGHT;
 }
+
 void initFood(struct food f[], size_t size) {
     struct food init = {0,0,0,0,0};
     int max_y=0, max_x=0;
@@ -124,6 +128,7 @@ void initFood(struct food f[], size_t size) {
         f[i] = init;
     }
 }
+
 void init(struct snake *head, struct tail *tail, size_t size) {
     clear(); // очищаем весь экран
     initTail(tail, MAX_TAIL_SIZE);
@@ -157,6 +162,7 @@ void addTail(struct snake *head) {
     }
     head->tsize++;
 }
+
 void printHelp(char *s) {
     mvprintw(0, 0, s);
 }
@@ -205,6 +211,7 @@ void putFood(struct food f[], size_t number_seeds) {
         putFoodSeed(&f[i]);
     }
 }
+
 void refreshFood(struct food f[], int nfood) {
     int max_x=0, max_y=0;
     char spoint[2] = {0};
@@ -217,6 +224,7 @@ void refreshFood(struct food f[], int nfood) {
         }
     }
 }
+
 _Bool haveEat(struct snake *head, struct food f[]) {
     for(size_t i=0; i<MAX_FOOD_SIZE; i++)
         if( f[i].enable && head->x == f[i].x && head->y == f[i].y  ) {
@@ -225,22 +233,43 @@ _Bool haveEat(struct snake *head, struct food f[]) {
         }
     return 0;
 }
+
 void printLevel(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
     mvprintw(0, max_x-10, "LEVEL: %d", head->tsize);
 }
+
 void printExit(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
     mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %d", head->tsize);
 }
+
 _Bool isCrash(struct snake *head) {
     for(size_t i=1; i<head->tsize; i++)
         if(head->x == head->tail[i].x && head->y == head->tail[i].y)
             return 1;
     return 0;
 }
+
+void waitTime(struct snake *s)
+{
+        int t = 0;
+        size_t tail = snake.tsize;
+        if (tail >= 5 && tail <10)
+                t = 100;
+        else if (tail >= 10 && tail < 15)
+                t = 70;
+        else if (tail >= 15 && tail < 20)
+                t = 50;
+        else if (tail >= 20)
+                t = 30;
+        else
+                t = 120;
+        timeout(t);
+}
+
 int main()
 {
     char ch[]="*";
@@ -249,7 +278,7 @@ int main()
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
     keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
-    
+
     raw();                // Откдючаем line buffering
     noecho();            // Отключаем echo() режим при вызове getch
     curs_set(FALSE);    //Отключаем курсор
@@ -269,12 +298,12 @@ int main()
         }
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
-        timeout(100); // Задержка при отрисовке
+        waitTime(&snake);//timeout(100); // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
     getch();
     endwin(); // Завершаем режим curses mod
-    
+
     return 0;
 }
