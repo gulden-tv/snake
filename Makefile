@@ -5,3 +5,5 @@ snake: main.c
 	gcc -o snake main.c $(LDFLAGS)
 
 all: snake
+clean:
+	rm -f snake
