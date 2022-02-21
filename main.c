@@ -13,7 +13,7 @@
 #include <unistd.h>
 
 
-#define PRINT_USAGE printf("Usage: %s [-s]\n -s flag get you possibility to enjoy two-player game. Try to find it out!\n", argv[0]);
+#define PRINT_USAGE printf("Usage: %s [-s]\n -s flag get you possibility to loop your snake, try it! (hint: wasd)!\n", argv[0]);
 
 
 
@@ -279,7 +279,11 @@ int calculateLevel(snake_t ** snakes, int last_snake_id)
         res += snakes[i]->tsize;
     }
     res-=START_TAIL_SIZE;
-    return res+1;
+    if(res<=0)
+    {
+      res = 1;
+    }
+    return res;
 }
 
 int isLoop(struct snake_t *head) {
