@@ -9,9 +9,10 @@
 #include <ncurses.h>
 #include <inttypes.h>
 #include <wchar.h>
+#include <ctype.h>
 
 enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
-enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
+enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3, MAX_FOOD=3};
 
 /*
  Хвост этто массив состоящий из координат x,y
@@ -20,6 +21,18 @@ struct tail {
     int x;
     int y;
 } tail[MAX_TAIL_SIZE];
+
+typedef struct {
+    char foodSymbol;
+    int8_t foodCoast;
+    uint8_t next_state;
+} FoodItem_t;
+
+FoodItem_t FOOD_ITEMS[MAX_FOOD] = {
+        [0]={'o', 1, 1},// good eat
+        [1]={'g', 0, 2},//
+        [2]={'x', -1, 2}// toxic
+};
 
 /*
  Еда массив точек
@@ -32,7 +45,8 @@ struct food {
     int x;
     int y;
     time_t put_time;
-    char point;
+    time_t damage_time;
+    FoodItem_t item;
     uint8_t enable;
 } food[MAX_FOOD_SIZE];
 
@@ -130,7 +144,7 @@ void initHead(struct snake *head) {
     head->direction = RIGHT;
 }
 void initFood(struct food f[], size_t size) {
-    struct food init = {0,0,0,0,0};
+    struct food init = {0,0,0, 0, FOOD_ITEMS[0],0};
     int max_y=0, max_x=0;
     getmaxyx(stdscr, max_y, max_x);
     for(size_t i=0; i<size; i++) {
@@ -163,12 +177,14 @@ void goTail(struct snake *head) {
 /*
  Увеличение хвоста на 1 элемент
  */
-void addTail(struct snake *head) {
-    if(head == NULL || head->tsize>MAX_TAIL_SIZE) {
+void addTail(struct snake *head, FoodItem_t food) {
+    if(head == NULL || head->tsize>MAX_TAIL_SIZE || head->tsize + food.foodCoast > MAX_TAIL_SIZE) {
         mvprintw(0, 0, "Can't add tail");
         return;
     }
-    head->tsize++;
+
+    if (head->tsize + food.foodCoast != 0)
+         head->tsize += food.foodCoast;
 }
 void printHelp(char *s) {
     mvprintw(0, 0, s);
@@ -185,18 +201,33 @@ void putFoodSeed(struct food *fp) {
     fp->x = rand() % (max_x - 1);
     fp->y = rand() % (max_y - 2) + 1; //Не занимаем верхнюю строку
     fp->put_time = time(NULL);
-    fp->point = '$';
+    fp->damage_time = time(NULL);
     fp->enable = 1;
-    spoint[0] = fp->point;
+    fp->item = FOOD_ITEMS[0];
+    spoint[0] = fp->item.foodSymbol;
     mvprintw(fp->y, fp->x, spoint);
 }
+
 // Мигаем зерном, перед тем как оно исчезнет
 void blinkFood(struct food fp[], size_t nfood) {
     time_t current_time = time(NULL);
     char spoint[2] = {0}; // как выглядит зерно '$','\0'
     for( size_t i=0; i<nfood; i++ ) {
         if( fp[i].enable && (current_time - fp[i].put_time) > 6 ) {
-            spoint[0] = (current_time % 2)? 'S' : 's';
+            spoint[0] = (current_time % 2)? toupper(fp[i].item.foodSymbol): tolower((fp[i].item.foodSymbol));
+            mvprintw(fp[i].y, fp[i].x, spoint);
+        }
+    }
+}
+
+void damage_food(struct food fp[], size_t nfood) {
+    time_t current_time = time(NULL);
+    char spoint[2] = {0}; // как выглядит зерно '$','\0'
+    for( size_t i=0; i<nfood; i++ ) {
+        if( fp[i].enable && (current_time - fp[i].damage_time) > 3) {
+            fp[i].damage_time = time(NULL);
+            fp[i].item = FOOD_ITEMS[fp[i].item.next_state];
+            spoint[0] = fp[i].item.foodSymbol;
             mvprintw(fp[i].y, fp[i].x, spoint);
         }
     }
@@ -231,7 +262,6 @@ void putFood(struct food f[], size_t number_seeds) {
 }
 void refreshFood(struct food f[], int nfood) {
     int max_x=0, max_y=0;
-    char spoint[2] = {0};
     getmaxyx(stdscr, max_y, max_x);
     for(size_t i=0; i<nfood; i++) {
         if( f[i].put_time ) {
@@ -291,12 +321,13 @@ int main()
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
         if(haveEat(&snake, food)) {
-            addTail(&snake);
+            addTail(&snake, food->item);
             printLevel(&snake);
         }
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
+        damage_food(food, SEED_NUMBER);
         timeout(100); // Задержка при отрисовке
     }
     printExit(&snake);
