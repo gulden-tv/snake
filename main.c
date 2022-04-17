@@ -11,7 +11,15 @@
 #include <wchar.h>
 
 enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
-enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
+enum {MAX_TAIL_SIZE=1000,
+	START_TAIL_SIZE=3,
+	MAX_FOOD_SIZE=20,
+	FOOD_EXPIRE_SECONDS=10,
+	SPEED=20000,
+	SEED_NUMBER=3,
+	MAX_SPEED_OFFSET = 90,
+	PLUS_SPEED = 10,
+	DRAW_SPEED = 100};
 
 /*
  Хвост этто массив состоящий из координат x,y
@@ -47,6 +55,8 @@ struct snake {
     int x;
     int y;
     int direction;
+    int speed;
+    int countFood;
     size_t tsize;
     struct tail *tail;
 } snake;
@@ -127,6 +137,8 @@ void initTail(struct tail t[], size_t size) {
 void initHead(struct snake *head) {
     head->x = 0;
     head->y = 2;
+    head->countFood = 0;
+    head->speed = 10;
     head->direction = RIGHT;
 }
 void initFood(struct food f[], size_t size) {
@@ -242,9 +254,17 @@ void refreshFood(struct food f[], int nfood) {
     }
 }
 _Bool haveEat(struct snake *head, struct food f[]) {
-    for(size_t i=0; i<MAX_FOOD_SIZE; i++)
+	int max_x=0, max_y = 0;
+	getmaxyx(stdscr, max_y, max_x);
+	mvprintw(0, max_x-40, "FOOD SCORE:%d", head->countFood);
+	mvprintw(0, max_x-25, "SPEED:%d", head->speed);
+	for(size_t i=0; i<MAX_FOOD_SIZE; i++)
         if( f[i].enable && head->x == f[i].x && head->y == f[i].y  ) {
             f[i].enable = 0;
+            head->countFood++;
+            if (head->countFood % 5 == 0) {
+            	head->speed = (head->speed + PLUS_SPEED) > MAX_SPEED_OFFSET ? MAX_SPEED_OFFSET: (head->speed + PLUS_SPEED);
+            }
             return 1;
         }
     return 0;
@@ -257,7 +277,7 @@ void printLevel(struct snake *head) {
 void printExit(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %d", head->tsize);
+    mvprintw(max_y/2, max_x/2-30, "Your LEVEL is %d, FOOD SCORE: %d, SPEED: %d", head->tsize, head->countFood, head->speed);
 }
 _Bool isCrash(struct snake *head) {
     for(size_t i=1; i<head->tsize; i++)
@@ -267,7 +287,8 @@ _Bool isCrash(struct snake *head) {
 }
 int main()
 {
-    char ch[]="*";
+
+	char ch[]="*";
     int x=0, y=0, key_pressed=0;
     init(&snake, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
@@ -297,7 +318,7 @@ int main()
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
-        timeout(100); // Задержка при отрисовке
+        timeout(DRAW_SPEED - snake.speed); // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
