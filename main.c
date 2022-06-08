@@ -9,7 +9,7 @@ enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
 enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
 int snake_speed = 100;
 /*
- Хвост этто массив состоящий из координат x,y
+ Хвост этто массив состоящий из координат x,y.
  */
 struct tail {
     int x;
