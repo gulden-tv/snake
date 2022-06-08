@@ -1,9 +1,3 @@
-/*
- * Для компиляции необходимо добавить ключ -lncurses
- * gcc -o snake main.c -lncurses
- 
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -13,7 +7,7 @@
 
 enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
 enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
-
+int snake_speed = 100;
 /*
  Хвост этто массив состоящий из координат x,y
  */
@@ -169,7 +163,11 @@ void addTail(struct snake *head) {
         mvprintw(0, 0, "Can't add tail");
         return;
     }
-    head->tsize++;
+    for(int i = 0; i < 5; i++){
+        head->tsize++;
+    }
+    
+    snake_speed += 300;
 }
 void printHelp(char *s) {
     mvprintw(0, 0, s);
@@ -298,7 +296,7 @@ int main()
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
-        timeout(100); // Задержка при отрисовке
+        timeout(snake_speed); // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
