@@ -34,6 +34,7 @@ struct food {
     int y;
     time_t put_time;
     char point;
+	char bad;
     uint8_t enable;
 } food[MAX_FOOD_SIZE];
 
@@ -131,7 +132,7 @@ void initHead(struct snake *head) {
     head->direction = RIGHT;
 }
 void initFood(struct food f[], size_t size) {
-    struct food init = {0,0,0,0,0};
+    struct food init = {0,0,0,0,0,0};
     int max_y=0, max_x=0;
     getmaxyx(stdscr, max_y, max_x);
     for(size_t i=0; i<size; i++) {
@@ -171,6 +172,17 @@ void addTail(struct snake *head) {
     }
     head->tsize++;
 }
+/*
+ Уменьшение хвоста на 1 элемент
+ */
+void shortenTail(struct snake *head) {
+    if(head == NULL || head->tsize<=3) {
+        mvprintw(0, 0, "  Can't shorten tail                        "); // если змейка уже максимально отощала
+        return;
+    }
+    head->tsize--; // убавляем на 1. этот кусочек остаётся на игровом поле, это прикольно
+}
+
 void printHelp(char *s) {
     mvprintw(0, 0, s);
 }
@@ -179,6 +191,7 @@ void printHelp(char *s) {
  Обновить/разместить текущее зерно на поле
  */
 void putFoodSeed(struct food *fp) {
+	int type = rand()%2; // случайным образом решаем, какая у нас будет еда: хорошая или плохая (0 = хорошая, 1 = плохая)
     int max_x=0, max_y=0;
     char spoint[2] = {0};
     getmaxyx(stdscr, max_y, max_x);
@@ -186,7 +199,13 @@ void putFoodSeed(struct food *fp) {
     fp->x = rand() % (max_x - 1);
     fp->y = rand() % (max_y - 2) + 1; //Не занимаем верхнюю строку
     fp->put_time = time(NULL);
+	if(type == 0){ // если еда хорошая
     fp->point = '$';
+	fp->bad = 0;
+	} else { // если еда плохая
+	fp->point = 'P';
+	fp->bad = 1;
+	}
     fp->enable = 1;
     spoint[0] = fp->point;
     mvprintw(fp->y, fp->x, spoint);
@@ -196,8 +215,11 @@ void blinkFood(struct food fp[], size_t nfood) {
     time_t current_time = time(NULL);
     char spoint[2] = {0}; // как выглядит зерно '$','\0'
     for( size_t i=0; i<nfood; i++ ) {
-        if( fp[i].enable && (current_time - fp[i].put_time) > 6 ) {
+        if( fp[i].enable && (current_time - fp[i].put_time) > 6 && fp[i].bad == 0 ) { // хорошая еда мигает так
             spoint[0] = (current_time % 2)? 'S' : 's';
+            mvprintw(fp[i].y, fp[i].x, spoint);
+        } else if( fp[i].enable && (current_time - fp[i].put_time) > 6 && fp[i].bad == 1 ) { // плохая еда мигает так
+            spoint[0] = (current_time % 2)? 'p' : 'b';
             mvprintw(fp[i].y, fp[i].x, spoint);
         }
     }
@@ -242,12 +264,17 @@ void refreshFood(struct food f[], int nfood) {
         }
     }
 }
-_Bool haveEat(struct snake *head, struct food f[]) {
-    for(size_t i=0; i<MAX_FOOD_SIZE; i++)
-        if( f[i].enable && head->x == f[i].x && head->y == f[i].y  ) {
+int haveEat(struct snake *head, struct food f[]) { // тип возвращаемого значения заменён с bool на int, т.к. нам нужно возвращать ещё один возможный результат
+    for(size_t i=0; i<MAX_FOOD_SIZE; i++) {
+        if( f[i].enable && head->x == f[i].x && head->y == f[i].y && f[i].bad == 0  ) { // если еда хорошая
             f[i].enable = 0;
             return 1;
-        }
+        } 
+		else if ( f[i].enable && head->x == f[i].x && head->y == f[i].y && f[i].bad == 1  ) { // если еда плохая
+			f[i].enable = 0;
+            return 2;			
+		}
+	}
     return 0;
 }
 void printLevel(struct snake *head) {
@@ -270,6 +297,7 @@ int main()
 {
     char ch[]="*";
     int x=0, y=0, key_pressed=0;
+	int eaten = 0; //Переменная, чтобы запоминать, что мы съели
     init(&snake, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
@@ -291,8 +319,13 @@ int main()
             break;
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
-        if(haveEat(&snake, food)) {
-            addTail(&snake);
+        eaten = haveEat(&snake, food);
+		if( eaten == 1) { // 1 — это хорошая еда
+            addTail(&snake); // от хорошей еды мы растём
+            printLevel(&snake);
+        }
+		else if( eaten == 2 ) { // 2 — это плохая еда
+            shortenTail(&snake); // от плохой еды мы худеем, оставляя за собой... переваренную еду
             printLevel(&snake);
         }
         refreshFood(food, SEED_NUMBER);// Обновляем еду
