@@ -12,8 +12,8 @@
 #include <wchar.h>
 
 enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
-enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
-int64_t SNAKE_SPEED = 100;
+enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3, MAX_SNAKE_SPEED=15, MIN_SNAKE_SPEED=100};
+int8_t SNAKE_SPEED = MIN_SNAKE_SPEED;
 /*
  Хвост этто массив состоящий из координат x,y
  */
@@ -250,10 +250,22 @@ _Bool haveEat(struct snake *head, struct food f[]) {
         }
     return 0;
 }
+
+void upSnakeSpeed(size_t level){
+    if (level%10 == 0)
+    {
+        if (SNAKE_SPEED > MAX_SNAKE_SPEED)
+        {
+            SNAKE_SPEED -= 5;
+        }      
+    }
+}
+
 void printLevel(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(0, max_x-10, "LEVEL: %d", head->tsize);
+    upSnakeSpeed(head->tsize);
+    mvprintw(0, max_x-25, "LEVEL: %d SPEED: +%d", head->tsize, MIN_SNAKE_SPEED - SNAKE_SPEED);
 }
 void printExit(struct snake *head) {
     int max_x=0, max_y=0;
