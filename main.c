@@ -298,7 +298,7 @@ int main()
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
-        timeout(100); // Задержка при отрисовке
+        timeout(50); // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
