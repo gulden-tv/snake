@@ -13,7 +13,7 @@
 
 enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
 enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
-
+int64_t SNAKE_SPEED = 100;
 /*
  Хвост этто массив состоящий из координат x,y
  */
@@ -298,7 +298,13 @@ int main()
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
-        timeout(100); // Задержка при отрисовке
+        if (snake.direction == DOWN || snake.direction == UP)
+        {
+            timeout(SNAKE_SPEED * 2);
+        }else{
+            timeout(SNAKE_SPEED);
+        }
+         // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
