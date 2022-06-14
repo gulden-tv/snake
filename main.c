@@ -1,7 +1,7 @@
 /*
  * Для компиляции необходимо добавить ключ -lncurses
  * gcc -o snake main.c -lncurses
- 
+
  */
 
 #include <stdio.h>
@@ -13,7 +13,6 @@
 
 enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
 enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
-
 /*
  Хвост этто массив состоящий из координат x,y
  */
@@ -21,7 +20,6 @@ struct tail {
     int x;
     int y;
 } tail[MAX_TAIL_SIZE];
-
 /*
  Еда массив точек
  x, y - координата где установлена точка
@@ -36,7 +34,6 @@ struct food {
     char point;
     uint8_t enable;
 } food[MAX_FOOD_SIZE];
-
 /*
  Голова змейки содержит в себе
  x,y - координаты текущей позиции
@@ -51,7 +48,6 @@ struct snake {
     size_t tsize;
     struct tail *tail;
 } snake;
-
 /*
  Движение головы с учетом текущего направления движения
  */
@@ -106,7 +102,6 @@ void changeDirection(int32_t *new_direction, int32_t key) {
             break;
     }
 }
-
 int checkDirection(int32_t dir, int32_t key)
 {
     if(KEY_DOWN == key&&dir==UP || KEY_UP == key&&dir==DOWN || KEY_LEFT == key&&dir==RIGHT || KEY_RIGHT == key&&dir==LEFT)
@@ -118,7 +113,6 @@ int checkDirection(int32_t dir, int32_t key)
         return 1;
     }
 }
-
 void initTail(struct tail t[], size_t size) {
     struct tail init_t={0,0};
     for(size_t i=0; i<size; i++) {
@@ -145,7 +139,6 @@ void init(struct snake *head, struct tail *tail, size_t size) {
     head->tail = tail; // прикрепляем к голове хвост
     head->tsize = size+1;
 }
-
 /*
  Движение хвоста с учетом движения головы
  */
@@ -160,7 +153,6 @@ void goTail(struct snake *head) {
     head->tail[0].x = head->x;
     head->tail[0].y = head->y;
 }
-
 /*
  Увеличение хвоста на 1 элемент
  */
@@ -174,10 +166,9 @@ void addTail(struct snake *head) {
 void printHelp(char *s) {
     mvprintw(0, 0, s);
 }
-
 /*
  Обновить/разместить текущее зерно на поле
- */
+*/
 void putFoodSeed(struct food *fp) {
     int max_x=0, max_y=0;
     char spoint[2] = {0};
@@ -202,7 +193,6 @@ void blinkFood(struct food fp[], size_t nfood) {
         }
     }
 }
-
 void repairSeed(struct food f[], size_t nfood, struct snake *head) {
     for( size_t i=0; i<head->tsize; i++ )
         for( size_t j=0; j<nfood; j++ ){
@@ -221,10 +211,9 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
             }
         }
 }
-
 /*
  Разместить еду на поле
- */
+*/
 void putFood(struct food f[], size_t number_seeds) {
     for(size_t i=0; i<number_seeds; i++) {
         putFoodSeed(&f[i]);
@@ -266,6 +255,12 @@ _Bool isCrash(struct snake *head) {
             return 1;
     return 0;
 }
+int speedUP(struct snake *head){
+    int speed = 100;
+    speed -= head->tsize * 2; 
+    if (speed < 20) speed = 20;
+    return (speed);
+}
 int main()
 {
     char ch[]="*";
@@ -276,8 +271,8 @@ int main()
     keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
     
     raw();                // Откдючаем line buffering
-    noecho();            // Отключаем echo() режим при вызове getch
-    curs_set(FALSE);    //Отключаем курсор
+    noecho();             // Отключаем echo() режим при вызове getch
+    curs_set(FALSE);      //Отключаем курсор
     printHelp("  Use arrows for control. Press 'q' for EXIT");
     putFood(food, SEED_NUMBER);// Кладем зерна
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
@@ -289,7 +284,7 @@ int main()
         }
         if(isCrash(&snake))
             break;
-        go(&snake); // Рисуем новую голову
+        go(&snake);     // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
         if(haveEat(&snake, food)) {
             addTail(&snake);
@@ -298,7 +293,7 @@ int main()
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
-        timeout(100); // Задержка при отрисовке
+        timeout(speedUP(&snake)); // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
