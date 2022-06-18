@@ -74,7 +74,7 @@ void go(struct snake *head) {
             mvprintw(head->y, ++(head->x), ch);
             break;
         case UP:
-            if(head->y <= 0)
+            if(head->y <= 1)
                 head->y = max_y;
             mvprintw(--(head->y), head->x, ch);
             break;
