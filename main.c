@@ -12,7 +12,7 @@
 #include <wchar.h>
 
 enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
-enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
+enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=2, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, MAX_SPEED=200, SPEED=20000, SEED_NUMBER=3};
 
 /*
  Хвост этто массив состоящий из координат x,y
@@ -47,6 +47,7 @@ struct food {
 struct snake {
     int x;
     int y;
+    int speed;
     int direction;
     size_t tsize;
     struct tail *tail;
@@ -165,11 +166,34 @@ void goTail(struct snake *head) {
  Увеличение хвоста на 1 элемент
  */
 void addTail(struct snake *head) {
+    int max_x=0, max_y=0;
+    getmaxyx(stdscr, max_y, max_x);
     if(head == NULL || head->tsize>MAX_TAIL_SIZE) {
-        mvprintw(0, 0, "Can't add tail");
+        mvprintw(max_y/2-1, max_x/2-6, "Can't add tail");
         return;
     }
     head->tsize++;
+    if(head->speed > 140){
+        head->speed -=4;
+    }
+    else{
+        if(head->speed >110 && head->speed <= 140){
+            head->speed -=3;
+        }
+        else{
+            if(head->speed > 80 &&  head->speed <= 110){
+                head->speed -=2;
+            }
+            else{
+                if(head->speed > 40 && head->speed <=100){
+                    head->speed--;
+                }
+                else{
+                    mvprintw(max_y/2-1, max_x/2-13, "I can't increase the speed");
+                }
+            }
+        }
+    }
 }
 void printHelp(char *s) {
     mvprintw(0, 0, s);
@@ -253,12 +277,12 @@ _Bool haveEat(struct snake *head, struct food f[]) {
 void printLevel(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(0, max_x-10, "LEVEL: %d", head->tsize);
+    mvprintw(0, max_x-10, "LEVEL: %d", head->tsize - 3);
 }
 void printExit(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %d", head->tsize);
+    mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %d", head->tsize - 3);
 }
 _Bool isCrash(struct snake *head) {
     for(size_t i=1; i<head->tsize; i++)
@@ -280,6 +304,7 @@ int main()
     curs_set(FALSE);    //Отключаем курсор
     printHelp("  Use arrows for control. Press 'q' for EXIT");
     putFood(food, SEED_NUMBER);// Кладем зерна
+    snake.speed = MAX_SPEED;
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while( key_pressed != STOP_GAME ) {
         key_pressed = getch(); // Считываем клавишу
@@ -298,7 +323,7 @@ int main()
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
-        timeout(100); // Задержка при отрисовке
+        timeout(snake.speed); // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
