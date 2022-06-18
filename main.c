@@ -12,7 +12,7 @@
 #include <wchar.h>
 
 enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
-enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
+enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=2, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=16, MAX_SPEED=200, SPEED=20000, SEED_NUMBER=6};
 
 /*
  Хвост этто массив состоящий из координат x,y
@@ -32,6 +32,8 @@ struct tail {
 struct food {
     int x;
     int y;
+    int seed_number;
+    int speed_expire;
     time_t put_time;
     char point;
     uint8_t enable;
@@ -47,6 +49,7 @@ struct food {
 struct snake {
     int x;
     int y;
+    int speed;
     int direction;
     size_t tsize;
     struct tail *tail;
@@ -74,7 +77,7 @@ void go(struct snake *head) {
             mvprintw(head->y, ++(head->x), ch);
             break;
         case UP:
-            if(head->y <= 0)
+            if(head->y <= 1)
                 head->y = max_y;
             mvprintw(--(head->y), head->x, ch);
             break;
@@ -170,7 +173,39 @@ void addTail(struct snake *head) {
         return;
     }
     head->tsize++;
+    if(head->speed > 140)
+        head->speed -=4;
+    else
+    if(head->speed >110 && head->speed <= 140)
+        head->speed -=3;
+    else
+    if(head->speed > 80 &&  head->speed <= 110)
+        head->speed -=2;
+    else
+    if(head->speed > 30 && head->speed <=100)
+        head->speed--;
+    switch(head->tsize-2){
+        case 15:
+            food->seed_number--;
+            food->speed_expire -= 2;
+            break;
+        case 30:
+            food->seed_number--;
+            food->speed_expire -= 2;
+            break;
+        case 45:
+            food->seed_number--;
+            food->speed_expire -= 2;
+            break;
+        case 60:
+            food->seed_number--;
+            food->speed_expire -= 2;
+            break;
+        default:
+            break;
+    }
 }
+
 void printHelp(char *s) {
     mvprintw(0, 0, s);
 }
@@ -183,7 +218,7 @@ void putFoodSeed(struct food *fp) {
     char spoint[2] = {0};
     getmaxyx(stdscr, max_y, max_x);
     mvprintw(fp->y, fp->x, " ");
-    fp->x = rand() % (max_x - 1);
+    fp->x = rand() % (max_x - 1) + 1; //Не занимаем правый столбик
     fp->y = rand() % (max_y - 2) + 1; //Не занимаем верхнюю строку
     fp->put_time = time(NULL);
     fp->point = '$';
@@ -231,12 +266,13 @@ void putFood(struct food f[], size_t number_seeds) {
     }
 }
 void refreshFood(struct food f[], int nfood) {
+    refresh();
     int max_x=0, max_y=0;
     char spoint[2] = {0};
     getmaxyx(stdscr, max_y, max_x);
     for(size_t i=0; i<nfood; i++) {
         if( f[i].put_time ) {
-            if( !f[i].enable || (time(NULL) - f[i].put_time) > FOOD_EXPIRE_SECONDS ) {
+            if( !f[i].enable || (time(NULL) - f[i].put_time) > food->speed_expire ) {
                 putFoodSeed(&f[i]);
             }
         }
@@ -253,12 +289,12 @@ _Bool haveEat(struct snake *head, struct food f[]) {
 void printLevel(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(0, max_x-10, "LEVEL: %d", head->tsize);
+    mvprintw(0, max_x-10, "LEVEL: %d", head->tsize - 2);
 }
 void printExit(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %d", head->tsize);
+    mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %d", head->tsize - 2);
 }
 _Bool isCrash(struct snake *head) {
     for(size_t i=1; i<head->tsize; i++)
@@ -279,7 +315,9 @@ int main()
     noecho();            // Отключаем echo() режим при вызове getch
     curs_set(FALSE);    //Отключаем курсор
     printHelp("  Use arrows for control. Press 'q' for EXIT");
-    putFood(food, SEED_NUMBER);// Кладем зерна
+    putFood(food, food->seed_number = SEED_NUMBER);// Кладем зерна
+    snake.speed = MAX_SPEED;
+    food->speed_expire = FOOD_EXPIRE_SECONDS;
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while( key_pressed != STOP_GAME ) {
         key_pressed = getch(); // Считываем клавишу
@@ -295,10 +333,10 @@ int main()
             addTail(&snake);
             printLevel(&snake);
         }
-        refreshFood(food, SEED_NUMBER);// Обновляем еду
-        repairSeed(food, SEED_NUMBER, &snake);
-        blinkFood(food, SEED_NUMBER);
-        timeout(100); // Задержка при отрисовке
+        refreshFood(food, food->seed_number);// Обновляем еду
+        repairSeed(food, food->seed_number, &snake);
+        blinkFood(food, food->seed_number);
+        timeout(snake.speed); // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
