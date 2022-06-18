@@ -33,6 +33,7 @@ struct food {
     int x;
     int y;
     int seed_number;
+    int speed_expire;
     time_t put_time;
     char point;
     uint8_t enable;
@@ -185,16 +186,20 @@ void addTail(struct snake *head) {
         head->speed--;
     switch(head->tsize-2){
         case 15:
-            food->seed_number = 5;
+            food->seed_number--;
+            food->speed_expire -= 2;
             break;
         case 30:
-            food->seed_number = 4;
+            food->seed_number--;
+            food->speed_expire -= 2;
             break;
         case 45:
-            food->seed_number = 3;
+            food->seed_number--;
+            food->speed_expire -= 2;
             break;
         case 60:
-            food->seed_number = 2;
+            food->seed_number--;
+            food->speed_expire -= 2;
             break;
         default:
             break;
@@ -213,7 +218,7 @@ void putFoodSeed(struct food *fp) {
     char spoint[2] = {0};
     getmaxyx(stdscr, max_y, max_x);
     mvprintw(fp->y, fp->x, " ");
-    fp->x = rand() % (max_x - 1);
+    fp->x = rand() % (max_x - 1) + 1; //Не занимаем правый столбик
     fp->y = rand() % (max_y - 2) + 1; //Не занимаем верхнюю строку
     fp->put_time = time(NULL);
     fp->point = '$';
@@ -267,7 +272,7 @@ void refreshFood(struct food f[], int nfood) {
     getmaxyx(stdscr, max_y, max_x);
     for(size_t i=0; i<nfood; i++) {
         if( f[i].put_time ) {
-            if( !f[i].enable || (time(NULL) - f[i].put_time) > FOOD_EXPIRE_SECONDS ) {
+            if( !f[i].enable || (time(NULL) - f[i].put_time) > food->speed_expire ) {
                 putFoodSeed(&f[i]);
             }
         }
@@ -312,6 +317,7 @@ int main()
     printHelp("  Use arrows for control. Press 'q' for EXIT");
     putFood(food, food->seed_number = SEED_NUMBER);// Кладем зерна
     snake.speed = MAX_SPEED;
+    food->speed_expire = FOOD_EXPIRE_SECONDS;
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while( key_pressed != STOP_GAME ) {
         key_pressed = getch(); // Считываем клавишу
