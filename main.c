@@ -10,9 +10,9 @@
 #include <ncurses.h>
 #include <inttypes.h>
 #include <wchar.h>
-
+#define size_level 2
 enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
-enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
+enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=40000, SEED_NUMBER=3};
 
 /*
  Хвост этто массив состоящий из координат x,y
@@ -51,6 +51,7 @@ struct snake {
     size_t tsize;
     struct tail *tail;
 } snake;
+
 
 /*
  Движение головы с учетом текущего направления движения
@@ -208,7 +209,7 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
         for( size_t j=0; j<nfood; j++ ){
             /* Если хвост совпадает с зерном */
             if( f[j].x == head->tail[i].x && f[j].y == head->tail[i].y && f[i].enable ) {
-                mvprintw(0, 0, "Repair tail seed %d",j);
+                mvprintw(0, 0, "Repair tail seed %ld",j);
                 putFoodSeed(&f[j]);
             }
         }
@@ -216,7 +217,7 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
         for( size_t j=0; j<nfood; j++ ){
             /* Если два зерна на одной точке */
             if( i!=j && f[i].enable && f[j].enable && f[j].x == f[i].x && f[j].y == f[i].y && f[i].enable ) {
-                mvprintw(0, 0, "Repair same seed %d",j);
+                mvprintw(0, 0, "Repair same seed %ld",j);
                 putFoodSeed(&f[j]);
             }
         }
@@ -250,15 +251,15 @@ _Bool haveEat(struct snake *head, struct food f[]) {
         }
     return 0;
 }
-void printLevel(struct snake *head) {
+void printLevel(int c) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(0, max_x-10, "LEVEL: %d", head->tsize);
+    mvprintw(0, max_x-10, "SCORE: %d", c);
 }
-void printExit(struct snake *head) {
+void printExit(int c) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %d", head->tsize);
+    mvprintw(max_y/2, max_x/2-5, "Your SCORE is %d", c);
 }
 _Bool isCrash(struct snake *head) {
     for(size_t i=1; i<head->tsize; i++)
@@ -266,8 +267,20 @@ _Bool isCrash(struct snake *head) {
             return 1;
     return 0;
 }
+
+void print_my_level(int c) {
+    int max_x=0, max_y=0;
+    int count=0;
+    getmaxyx(stdscr, max_y, max_x);
+    mvprintw(0, max_x-20, "LEVEL:%d", c);
+    return;
+}
+
 int main()
 {
+   
+    int count_eat=0,pre_count_eat=size_level,lev_c=1;
+    int delay_digit=100;
     char ch[]="*";
     int x=0, y=0, key_pressed=0;
     init(&snake, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
@@ -278,10 +291,15 @@ int main()
     raw();                // Откдючаем line buffering
     noecho();            // Отключаем echo() режим при вызове getch
     curs_set(FALSE);    //Отключаем курсор
-    printHelp("  Use arrows for control. Press 'q' for EXIT");
+    
+    
+
     putFood(food, SEED_NUMBER);// Кладем зерна
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while( key_pressed != STOP_GAME ) {
+        print_my_level(lev_c);
+        printHelp("  Use arrows for control. Press 'q' for EXIT");
+        printLevel(count_eat);
         key_pressed = getch(); // Считываем клавишу
         if(checkDirection(snake.direction, key_pressed)) //Проверка корректности смены направления
         {
@@ -289,18 +307,38 @@ int main()
         }
         if(isCrash(&snake))
             break;
+       
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
+       
+
+
         if(haveEat(&snake, food)) {
             addTail(&snake);
-            printLevel(&snake);
+            
+            count_eat++;
+            printLevel(count_eat);
+
+            if(count_eat==pre_count_eat){
+
+                //печатаем на весь экран лвл и продолжаем
+                pre_count_eat+=size_level;
+                lev_c++;
+                print_my_level(lev_c);//печатаем Уровень
+                if(delay_digit>15){
+                delay_digit-=10;}
+                
+            
+
+            }
+
         }
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
-        timeout(100); // Задержка при отрисовке
-    }
-    printExit(&snake);
+        timeout(delay_digit); // Задержка при отрисовке
+    }   
+    printExit(count_eat);
     timeout(SPEED);
     getch();
     endwin(); // Завершаем режим curses mod
