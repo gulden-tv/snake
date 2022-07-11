@@ -11,6 +11,8 @@
 #include <inttypes.h>
 #include <wchar.h>
 
+#include "rec_table.h"
+
 enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
 enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
 
@@ -51,6 +53,8 @@ struct snake {
     size_t tsize;
     struct tail *tail;
 } snake;
+
+uint8_t lvl_to_table = 0;
 
 /*
  Движение головы с учетом текущего направления движения
@@ -259,6 +263,7 @@ void printExit(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
     mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %d", head->tsize);
+    lvl_to_table = head->tsize;
 }
 _Bool isCrash(struct snake *head) {
     for(size_t i=1; i<head->tsize; i++)
@@ -300,9 +305,11 @@ int main()
         blinkFood(food, SEED_NUMBER);
         timeout(100); // Задержка при отрисовке
     }
+
     printExit(&snake);
     timeout(SPEED);
-    getch();
+    recordsTable_begin (lvl_to_table);
+    //getch();
     endwin(); // Завершаем режим curses mod
     
     return 0;

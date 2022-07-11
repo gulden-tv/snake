@@ -1,7 +1,9 @@
 # Makefile
 LDFLAGS=-lncurses
+SRCS += main.c
+SRCS += rec_table.c
 
-snake: main.c
-	gcc -o snake main.c $(LDFLAGS)
+snake:
+	gcc $(SRCS) -o snake $(LDFLAGS)
 
 all: snake
