@@ -4,16 +4,18 @@
  
  */
 
-#include <stdio.h>
+//#include <stdio.h> не нужно. Содержится в ncurses
 #include <stdlib.h>
 #include <time.h>
 #include <ncurses.h>
-#include <inttypes.h>
-#include <wchar.h>
+//#include <inttypes.h> не нужно. Содержится в ncurses
+//#include <wchar.h> не нужно. Содержится в ncurses
 
-enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q'};
+enum {LEFT=1, UP, RIGHT, DOWN, STOP_GAME='q', CHEAT='u', STOP_CHEATING='y'};
 enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
-
+//cheat delay
+int time_delay;
+int seed_delay;
 /*
  Хвост этто массив состоящий из координат x,y
  */
@@ -52,6 +54,11 @@ struct snake {
     struct tail *tail;
 } snake;
 
+void set_cheat_delays()
+{
+    time_delay=100;
+    seed_delay = 1;
+}
 /*
  Движение головы с учетом текущего направления движения
  */
@@ -140,6 +147,7 @@ void initFood(struct food f[], size_t size) {
 }
 void init(struct snake *head, struct tail *tail, size_t size) {
     clear(); // очищаем весь экран
+    set_cheat_delays();
     initTail(tail, MAX_TAIL_SIZE);
     initHead(head);
     head->tail = tail; // прикрепляем к голове хвост
@@ -192,11 +200,11 @@ void putFoodSeed(struct food *fp) {
     mvprintw(fp->y, fp->x, spoint);
 }
 // Мигаем зерном, перед тем как оно исчезнет
-void blinkFood(struct food fp[], size_t nfood) {
+void blinkFood(struct food fp[], size_t nfood, int delay) {
     time_t current_time = time(NULL);
     char spoint[2] = {0}; // как выглядит зерно '$','\0'
     for( size_t i=0; i<nfood; i++ ) {
-        if( fp[i].enable && (current_time - fp[i].put_time) > 6 ) {
+        if( fp[i].enable && (current_time - fp[i].put_time) > 6*delay ) {
             spoint[0] = (current_time % 2)? 'S' : 's';
             mvprintw(fp[i].y, fp[i].x, spoint);
         }
@@ -230,13 +238,13 @@ void putFood(struct food f[], size_t number_seeds) {
         putFoodSeed(&f[i]);
     }
 }
-void refreshFood(struct food f[], int nfood) {
+void refreshFood(struct food f[], int nfood, int delay) {
     int max_x=0, max_y=0;
     char spoint[2] = {0};
     getmaxyx(stdscr, max_y, max_x);
     for(size_t i=0; i<nfood; i++) {
         if( f[i].put_time ) {
-            if( !f[i].enable || (time(NULL) - f[i].put_time) > FOOD_EXPIRE_SECONDS ) {
+            if( !f[i].enable || (time(NULL) - f[i].put_time) > FOOD_EXPIRE_SECONDS * delay ) {
                 putFoodSeed(&f[i]);
             }
         }
@@ -271,10 +279,9 @@ int main()
     char ch[]="*";
     int x=0, y=0, key_pressed=0;
     init(&snake, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
-    initFood(food, MAX_FOOD_SIZE);
+    initFood(food, MAX_FOOD_SIZE); 
     initscr();            // Старт curses mod
-    keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
-    
+    keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.  
     raw();                // Откдючаем line buffering
     noecho();            // Отключаем echo() режим при вызове getch
     curs_set(FALSE);    //Отключаем курсор
@@ -283,6 +290,13 @@ int main()
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while( key_pressed != STOP_GAME ) {
         key_pressed = getch(); // Считываем клавишу
+        if (key_pressed == CHEAT){
+            time_delay = 300;
+            seed_delay = 5;   
+        }
+        if (key_pressed == STOP_CHEATING){
+            set_cheat_delays();
+        }
         if(checkDirection(snake.direction, key_pressed)) //Проверка корректности смены направления
         {
             changeDirection(&snake.direction, key_pressed); // Меняем напарвление движения
@@ -295,10 +309,11 @@ int main()
             addTail(&snake);
             printLevel(&snake);
         }
-        refreshFood(food, SEED_NUMBER);// Обновляем еду
+        refreshFood(food, SEED_NUMBER, seed_delay);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
-        blinkFood(food, SEED_NUMBER);
-        timeout(100); // Задержка при отрисовке
+        blinkFood(food, SEED_NUMBER, seed_delay);
+        timeout(time_delay); 
+        // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
