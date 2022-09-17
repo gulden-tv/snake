@@ -346,6 +346,13 @@ _Bool isCrash(struct snake *head) {
     return 0;
 }
 
+_Bool isCrashSnake2(struct snake *head, struct snake *head2) {
+    for (size_t i = 1; i < head2->tsize; i++)
+        if (head->x == head2->tail[i].x && head->y == head2->tail[i].y)
+            return 1;
+    return 0;
+}
+
 int main() {
     char ch[] = "*";
     int x = 0, y = 0, key_pressed = 0;
@@ -364,6 +371,7 @@ int main() {
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
     putFood(food, SEED_NUMBER);// Кладем зерна
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
+    
     while (key_pressed != STOP_GAME) {
         key_pressed = getch(); // Считываем клавишу
         if (checkDirection(snake.direction, key_pressed)) //Проверка корректности смены направления
@@ -373,10 +381,15 @@ int main() {
         autoChangeDirection(&snake2, food, SEED_NUMBER);
         if (isCrash(&snake))
             break;
+        if (isCrashSnake2(&snake, &snake2))
+            break;	
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
         go(&snake2); // Рисуем новую голову
         goTail(&snake2); //Рисуем хвост
+        if (isCrashSnake2(&snake2, &snake)){
+            init(&snake2, tail2, START_TAIL_SIZE); //Инициализация, хвост = 3
+        }
         if (haveEat(&snake, food)) {
             addTail(&snake);
             printLevel(&snake);
