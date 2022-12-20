@@ -12,7 +12,7 @@
 #include <wchar.h>
 
 enum {
-    LEFT = 1, UP, RIGHT, DOWN, STOP_GAME = 'q'
+    LEFT = 1, UP = 2, RIGHT = 3, DOWN = 4, STOP_GAME = 'q'
 };
 enum {
     MAX_TAIL_SIZE = 1000,
