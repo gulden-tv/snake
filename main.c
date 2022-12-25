@@ -346,6 +346,22 @@ _Bool isCrash(struct snake *head) {
     return 0;
 }
 
+//Детектироваие сталкивания двух змеек
+ _Bool isCrossCrash(struct snake *head_1, struct snake *head_2) {
+    if ((head_1->x == head_2->x) && (head_1->y == head_2->y))
+        return 1;
+
+    for (size_t i = 1; i < head_2->tsize; i++)
+        if (head_1->x == head_2->tail[i].x && head_1->y == head_2->tail[i].y)
+            return 1;
+            
+    for (size_t i = 1; i < head_1->tsize; i++)
+        if (head_2->x == head_1->tail[i].x && head_2->y == head_1->tail[i].y)
+            return 1;   
+                                     
+    return 0;
+}
+
 int main() {
     char ch[] = "*";
     int x = 0, y = 0, key_pressed = 0;
@@ -373,6 +389,8 @@ int main() {
         autoChangeDirection(&snake2, food, SEED_NUMBER);
         if (isCrash(&snake))
             break;
+        if (isCrossCrash(&snake, &snake2)) // Проверяем столкновение двух змеек
+            break;  
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
         go(&snake2); // Рисуем новую голову
