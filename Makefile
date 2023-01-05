@@ -1,5 +1,5 @@
 # Makefile
-LDFLAGS=-lncurses
+LDFLAGS = -Llib .\pdcurses.dll -s -Wl,--subsystem,console
 
 snake: main.c
 	gcc -o snake main.c $(LDFLAGS)

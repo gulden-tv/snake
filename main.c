@@ -4,10 +4,11 @@
  
  */
 
+#include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <ncurses.h>
+#include "lib\pdcwin.h"
 #include <inttypes.h>
 #include <wchar.h>
 
