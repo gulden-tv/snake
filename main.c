@@ -1,7 +1,22 @@
 /*
- * Р”Р»СЏ РєРѕРјРїРёР»СЏС†РёРё РЅРµРѕР±С…РѕРґРёРјРѕ РґРѕР±Р°РІРёС‚СЊ РєР»СЋС‡ -lncurses
+ * Для компиляции необходимо добавить ключ -lncurses
  * gcc -o snake main.c -lncurses
- 
+  
+ //1. размеры окна - глобальные переменные, обновляем при проверке размера окна, т.к. размеры экрана могут поменяться пользователем
+    go, initHead, initFood, putFoodSeed, refreshFood, printLevel, printExit, main
+    //1. int max_x = 0, max_y = 0;
+    //1. getmaxyx(stdscr, max_y, max_x); // macro - размер терминала
+    //1. новая функция очищает экран, если поменялся размер
+    //1. проверяем размер экрана централизовано
+    //1. проверяем изменение размера экрана централизовано
+ //2. массив хвостов
+    //2. массив змеек
+ //3. змейки не могут проходить сквозь друг друга
+    //3. всегда поворот направо
+ //4. убираем движения "по диагонали"
+ //5. разрешаем двигаться обратно
+    checkDirection, isCrash 
+
  */
 
 #include <stdio.h>
@@ -10,6 +25,12 @@
 #include <ncurses.h>
 #include <inttypes.h>
 #include <wchar.h>
+
+// 1. размеры окна - глобальные переменные, обновляем при проверке размера окна, т.к. размеры экрана могут поменяться пользователем
+int max_x = 0, max_y = 0;
+//int max_x_old = 0, max_y_old = 0;
+
+int count = 0;
 
 enum {
     LEFT = 1, UP, RIGHT, DOWN, STOP_GAME = 'q'
@@ -30,19 +51,18 @@ enum{
 };
 
 /*
- РҐРІРѕСЃС‚ СЌС‚С‚Рѕ РјР°СЃСЃРёРІ СЃРѕСЃС‚РѕСЏС‰РёР№ РёР· РєРѕРѕСЂРґРёРЅР°С‚ x,y
+ Хвост это массив состоящий из координат x,y
  */
 struct tail {
     int x;
     int y;
-} tail[MAX_TAIL_SIZE], tail2[MAX_TAIL_SIZE];
-
+} tail[2][MAX_TAIL_SIZE]; //2. массив хвостов
 /*
- Р•РґР° РјР°СЃСЃРёРІ С‚РѕС‡РµРє
- x, y - РєРѕРѕСЂРґРёРЅР°С‚Р° РіРґРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅР° С‚РѕС‡РєР°
- put_time - РІСЂРµРјСЏ РєРѕРіРґР° РґР°РЅРЅР°СЏ С‚РѕС‡РєР° Р±С‹Р»Р° СѓСЃС‚Р°РЅРѕРІР»РµРЅР°
- point - РІРЅРµС€РЅРёР№ РІРёРґ С‚РѕС‡РєРё ('$','E'...)
- enable - Р±С‹Р»Р° Р»Рё С‚РѕС‡РєР° СЃСЉРµРґРµРЅР°
+ Еда массив точек
+ x, y - координата где установлена точка
+ put_time - время когда данная точка была установлена
+ point - внешний вид точки ('$','E'...)
+ enable - была ли точка съедена
  */
 struct food {
     int x;
@@ -50,14 +70,14 @@ struct food {
     time_t put_time;
     char point;
     uint8_t enable;
-} food[MAX_FOOD_SIZE];
+} food[MAX_FOOD_SIZE]; //2. массив змеек
 
 /*
- Р“РѕР»РѕРІР° Р·РјРµР№РєРё СЃРѕРґРµСЂР¶РёС‚ РІ СЃРµР±Рµ
- x,y - РєРѕРѕСЂРґРёРЅР°С‚С‹ С‚РµРєСѓС‰РµР№ РїРѕР·РёС†РёРё
- direction - РЅР°РїСЂР°РІР»РµРЅРёРµ РґРІРёР¶РµРЅРёСЏ
- tsize - СЂР°Р·РјРµСЂ С…РІРѕСЃС‚Р°
- *tail -  СЃСЃС‹Р»РєР° РЅР° С…РІРѕСЃС‚
+ Голова змейки содержит в себе
+ x,y - координаты текущей позиции
+ direction - направление движения
+ tsize - размер хвоста
+ *tail -  ссылка на хвост
  */
 struct snake {
     int number;
@@ -66,7 +86,7 @@ struct snake {
     int direction;
     size_t tsize;
     struct tail *tail;
-} snake, snake2;
+} snake[2];
 
 void setColor(int objectType){
     attroff(COLOR_PAIR(1));
@@ -88,37 +108,102 @@ void setColor(int objectType){
     }
 }
 
+void go(struct snake *);
+
+//3. змейки не могут проходить сквозь друг груга
+int checkPoint(struct snake *head, int y, int x) {
+	int empty = 1;
+	
+	for(int i = 0; i < 2; i++) {
+		if(head->number != snake[i].number) {
+			if(snake[i].x == x &&  snake[i].y == y) {
+				empty = 0;
+				break;
+			}
+			for(int j = 0; j < snake[i].tsize; j++) {
+				if(snake[i].tail[j].x == x &&  snake[i].tail[j].y == y) {
+					empty = 0;
+					break;
+				}
+
+			}
+			if (empty == 0) break;
+		}
+	}
+
+	//mvprintw(1, 0, "empty: %d count: %d", empty, count);	
+
+	if(empty == 0 && count < 4) { //3. всегда поворот направо
+		switch (head->direction) {
+			case LEFT:
+				head->direction = UP;
+				go(head);
+				break;
+			case UP:
+				head->direction = RIGHT;
+				go(head);
+				break;
+			case RIGHT:
+				head->direction = DOWN;
+				go(head);
+				break;
+			case DOWN:
+				head->direction = LEFT;
+				go(head);
+				break;
+			default:
+				break;
+		}
+		count++;
+	}
+	else {
+		count = 0;
+	}
+	return empty;
+}
+
 /*
- Р”РІРёР¶РµРЅРёРµ РіРѕР»РѕРІС‹ СЃ СѓС‡РµС‚РѕРј С‚РµРєСѓС‰РµРіРѕ РЅР°РїСЂР°РІР»РµРЅРёСЏ РґРІРёР¶РµРЅРёСЏ
+ Движение головы с учетом текущего направления движения
  */
 void go(struct snake *head) {
     setColor(head->number);
     char ch[] = "@";
-    int max_x = 0, max_y = 0;
-    getmaxyx(stdscr, max_y, max_x); // macro - СЂР°Р·РјРµСЂ С‚РµСЂРјРёРЅР°Р»Р°
-    //clear(); // РѕС‡РёС‰Р°РµРј РІРµСЃСЊ СЌРєСЂР°РЅ
-    mvprintw(head->y, head->x, " "); // РѕС‡РёС‰Р°РµРј РѕРґРёРЅ СЃРёРјРІРѕР»
+    //1. int max_x = 0, max_y = 0;
+    //1. getmaxyx(stdscr, max_y, max_x); // macro - размер терминала
+    mvprintw(head->y, head->x, " "); // очищаем один символ
     switch (head->direction) {
         case LEFT:
-            if (head->x <= 0) // Р¦РёРєР»РёС‡РµСЃРєРѕРµ РґРІРёР¶РµРЅРёРµ, С‡С‚Рѕ Р±С‹ РЅРµ
-                // СѓС…РѕРґРёС‚СЊ Р·Р° РїСЂРµРґРµР»С‹ СЌРєСЂР°РЅР°
+            if (head->x <= 0) {// Циклическое движение, что бы не
+                // уходить за пределы экрана
                 head->x = max_x;
-            mvprintw(head->y, --(head->x), ch);
+			}
+            if (checkPoint(head, head->y, (head->x)-1)) {
+				mvprintw(head->y, --(head->x), ch);
+			}
             break;
         case RIGHT:
-            if (head->x >= max_x)
+            if (head->x >= max_x) {
                 head->x = 0;
-            mvprintw(head->y, ++(head->x), ch);
+			}
+            if (checkPoint(head, head->y, (head->x)+1)) {
+				mvprintw(head->y, ++(head->x), ch);
+			}
             break;
         case UP:
-            if (head->y <= 0)
+            if (head->y <= 0) {
                 head->y = max_y;
-            mvprintw(--(head->y), head->x, ch);
+			}
+			if (checkPoint(head, (head->y)-1, head->x)) {
+				mvprintw(--(head->y), head->x, ch);	
+			}
             break;
         case DOWN:
-            if (head->y >= max_y)
+            if (head->y >= max_y) {
                 head->y = 0;
-            mvprintw(++(head->y), head->x, ch);
+			}
+			if (checkPoint(head, (head->y)+1, head->x)) {
+				mvprintw(++(head->y), head->x, ch);
+			}
             break;
         default:
             break;
@@ -127,17 +212,18 @@ void go(struct snake *head) {
 }
 
 void changeDirection(int32_t *new_direction, int32_t key) {
+	//mvprintw(1, 0, "key: %d", key);
     switch (key) {
-        case KEY_DOWN: // СЃС‚СЂРµР»РєР° РІРЅРёР·
+        case KEY_DOWN: // стрелка вниз
             *new_direction = DOWN;
             break;
-        case KEY_UP: // СЃС‚СЂРµР»РєР° РІРІРµСЂС…
+        case KEY_UP: // стрелка вверх
             *new_direction = UP;
             break;
-        case KEY_LEFT: // СЃС‚СЂРµР»РєР° РІР»РµРІРѕ
+        case KEY_LEFT: // стрелка влево
             *new_direction = LEFT;
             break;
-        case KEY_RIGHT: // СЃС‚СЂРµР»РєР° РІРїСЂР°РІРѕ
+        case KEY_RIGHT: // стрелка вправо
             *new_direction = RIGHT;
             break;
         default:
@@ -146,28 +232,37 @@ void changeDirection(int32_t *new_direction, int32_t key) {
 }
 
 
-int distance(const struct snake snake, const struct food food) {   // РІС‹С‡РёСЃР»СЏРµС‚ РєРѕР»РёС‡РµСЃС‚РІРѕ С…РѕРґРѕРІ РґРѕ РµРґС‹
+int distance(const struct snake snake, const struct food food) {   // вычисляет количество ходов до еды
     return (abs(snake.x - food.x) + abs(snake.y - food.y));
 }
 
 void autoChangeDirection(struct snake *snake, struct food food[], int foodSize) {
     int pointer = 0;
-    for (int i = 1; i < foodSize; i++) {   // РёС‰РµРј Р±Р»РёР¶Р°Р№С€СѓСЋ РµРґСѓ
+    for (int i = 1; i < foodSize; i++) {   // ищем ближайшую еду
         pointer = (distance(*snake, food[i]) < distance(*snake, food[pointer])) ? i : pointer;
     }
-    if ((snake->direction == RIGHT || snake->direction == LEFT) &&
-        (snake->y != food[pointer].y)) {  // РіРѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅРѕРµ РґРІРёР¶РµРЅРёРµ
-        snake->direction = (food[pointer].y > snake->y) ? DOWN : UP;
-    } else if ((snake->direction == DOWN || snake->direction == UP) &&
-               (snake->x != food[pointer].x)) {  // РІРµСЂС‚РёРєР°Р»СЊРЅРѕРµ РґРІРёР¶РµРЅРёРµ
-        snake->direction = (food[pointer].x > snake->x) ? RIGHT : LEFT;
-    }
+    //4. убираем движения "по диагонали"
+    if(abs(snake->y-food[pointer].y) < abs(snake->x-food[pointer].x) || abs(snake->x-food[pointer].x) == 0) {
+		if ((snake->direction == RIGHT || snake->direction == LEFT) &&
+			(snake->y != food[pointer].y)) {  // горизонтальное движение
+			snake->direction = (food[pointer].y > snake->y) ? DOWN : UP;
+		}
+	} 
+	if(abs(snake->x-food[pointer].x) < abs(snake->y-food[pointer].y) || abs(snake->y-food[pointer].y) == 0) {
+		if ((snake->direction == DOWN || snake->direction == UP) &&
+				   (snake->x != food[pointer].x)) {  // вертикальное движение
+			snake->direction = (food[pointer].x > snake->x) ? RIGHT : LEFT;
+		}
+	}
 }
 
 
 int checkDirection(int32_t dir, int32_t key) {
-    if (KEY_DOWN == key && dir == UP || KEY_UP == key && dir == DOWN || KEY_LEFT == key && dir == RIGHT ||
-        KEY_RIGHT == key && dir == LEFT) {
+	//5. разрешаем двигаться обратно
+	return 1;
+	
+    if ((KEY_DOWN == key && dir == UP) || (KEY_UP == key && dir == DOWN) || (KEY_LEFT == key && dir == RIGHT) ||
+        (KEY_RIGHT == key && dir == LEFT)) {
         return 0;
     } else {
         return 1;
@@ -182,8 +277,8 @@ void initTail(struct tail t[], size_t size) {
 }
 
 void initHead(struct snake *head) {
-    int max_y = 0, max_x = 0;
-    getmaxyx(stdscr, max_y, max_x);
+    //1. int max_y = 0, max_x = 0;
+    //2. getmaxyx(stdscr, max_y, max_x);
     head->x = (rand()) % (max_x - 1);
     head->y = (rand()) % (max_y - 10) + 1;
     head->direction = RIGHT;
@@ -191,24 +286,24 @@ void initHead(struct snake *head) {
 
 void initFood(struct food f[], size_t size) {
     struct food init = {0, 0, 0, 0, 0};
-    int max_y = 0, max_x = 0;
-    getmaxyx(stdscr, max_y, max_x);
+    //1. int max_y = 0, max_x = 0;
+    //2. getmaxyx(stdscr, max_y, max_x);
     for (size_t i = 0; i < size; i++) {
         f[i] = init;
     }
 }
 
 void init(struct snake *head, int number, struct tail *tail, size_t size) {
-    clear(); // РѕС‡РёС‰Р°РµРј РІРµСЃСЊ СЌРєСЂР°РЅ
+    clear(); // очищаем весь экран
     initTail(tail, MAX_TAIL_SIZE);
     initHead(head);
     head->number = number;
-    head->tail = tail; // РїСЂРёРєСЂРµРїР»СЏРµРј Рє РіРѕР»РѕРІРµ С…РІРѕСЃС‚
+    head->tail = tail; // прикрепляем к голове хвост
     head->tsize = size + 1;
 }
 
 /*
- Р”РІРёР¶РµРЅРёРµ С…РІРѕСЃС‚Р° СЃ СѓС‡РµС‚РѕРј РґРІРёР¶РµРЅРёСЏ РіРѕР»РѕРІС‹
+ Движение хвоста с учетом движения головы
  */
 void goTail(struct snake *head) {
     char ch[] = "*";
@@ -225,7 +320,7 @@ void goTail(struct snake *head) {
 }
 
 /*
- РЈРІРµР»РёС‡РµРЅРёРµ С…РІРѕСЃС‚Р° РЅР° 1 СЌР»РµРјРµРЅС‚
+ Увеличение хвоста на 1 элемент
  */
 void addTail(struct snake *head) {
     if (head == NULL || head->tsize > MAX_TAIL_SIZE) {
@@ -240,15 +335,15 @@ void printHelp(char *s) {
 }
 
 /*
- РћР±РЅРѕРІРёС‚СЊ/СЂР°Р·РјРµСЃС‚РёС‚СЊ С‚РµРєСѓС‰РµРµ Р·РµСЂРЅРѕ РЅР° РїРѕР»Рµ
+ Обновить/разместить текущее зерно на поле
  */
 void putFoodSeed(struct food *fp) {
-    int max_x = 0, max_y = 0;
+    //1. int max_x = 0, max_y = 0;
     char spoint[2] = {0};
-    getmaxyx(stdscr, max_y, max_x);
+    //2. getmaxyx(stdscr, max_y, max_x);
     mvprintw(fp->y, fp->x, " ");
     fp->x = rand() % (max_x - 1);
-    fp->y = rand() % (max_y - 2) + 1; //РќРµ Р·Р°РЅРёРјР°РµРј РІРµСЂС…РЅСЋСЋ СЃС‚СЂРѕРєСѓ
+    fp->y = rand() % (max_y - 2) + 1; //Не занимаем верхнюю строку
     fp->put_time = time(NULL);
     fp->point = '$';
     fp->enable = 1;
@@ -257,10 +352,10 @@ void putFoodSeed(struct food *fp) {
     mvprintw(fp->y, fp->x, spoint);
 }
 
-// РњРёРіР°РµРј Р·РµСЂРЅРѕРј, РїРµСЂРµРґ С‚РµРј РєР°Рє РѕРЅРѕ РёСЃС‡РµР·РЅРµС‚
+// Мигаем зерном, перед тем как оно исчезнет
 void blinkFood(struct food fp[], size_t nfood) {
     time_t current_time = time(NULL);
-    char spoint[2] = {0}; // РєР°Рє РІС‹РіР»СЏРґРёС‚ Р·РµСЂРЅРѕ '$','\0'
+    char spoint[2] = {0}; // как выглядит зерно '$','\0'
     for (size_t i = 0; i < nfood; i++) {
         if (fp[i].enable && (current_time - fp[i].put_time) > 6) {
             spoint[0] = (current_time % 2) ? 'S' : 's';
@@ -273,7 +368,7 @@ void blinkFood(struct food fp[], size_t nfood) {
 void repairSeed(struct food f[], size_t nfood, struct snake *head) {
     for (size_t i = 0; i < head->tsize; i++)
         for (size_t j = 0; j < nfood; j++) {
-            /* Р•СЃР»Рё С…РІРѕСЃС‚ СЃРѕРІРїР°РґР°РµС‚ СЃ Р·РµСЂРЅРѕРј */
+            /* Если хвост совпадает с зерном */
             if (f[j].x == head->tail[i].x && f[j].y == head->tail[i].y && f[i].enable) {
                 mvprintw(0, 0, "Repair tail seed %d", j);
                 putFoodSeed(&f[j]);
@@ -281,7 +376,7 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
         }
     for (size_t i = 0; i < nfood; i++)
         for (size_t j = 0; j < nfood; j++) {
-            /* Р•СЃР»Рё РґРІР° Р·РµСЂРЅР° РЅР° РѕРґРЅРѕР№ С‚РѕС‡РєРµ */
+            /* Если два зерна на одной точке */
             if (i != j && f[i].enable && f[j].enable && f[j].x == f[i].x && f[j].y == f[i].y && f[i].enable) {
                 mvprintw(0, 0, "Repair same seed %d", j);
                 putFoodSeed(&f[j]);
@@ -290,7 +385,7 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
 }
 
 /*
- Р Р°Р·РјРµСЃС‚РёС‚СЊ РµРґСѓ РЅР° РїРѕР»Рµ
+ Разместить еду на поле
  */
 void putFood(struct food f[], size_t number_seeds) {
     for (size_t i = 0; i < number_seeds; i++) {
@@ -299,9 +394,9 @@ void putFood(struct food f[], size_t number_seeds) {
 }
 
 void refreshFood(struct food f[], int nfood) {
-    int max_x = 0, max_y = 0;
-    char spoint[2] = {0};
-    getmaxyx(stdscr, max_y, max_x);
+    //1. int max_x = 0, max_y = 0;
+    //char spoint[2] = {0};
+    //2. getmaxyx(stdscr, max_y, max_x);
     for (size_t i = 0; i < nfood; i++) {
         if (f[i].put_time) {
             if (!f[i].enable || (time(NULL) - f[i].put_time) > FOOD_EXPIRE_SECONDS) {
@@ -321,8 +416,8 @@ _Bool haveEat(struct snake *head, struct food f[]) {
 }
 
 void printLevel(struct snake *head) {
-    int max_x = 0, max_y = 0;
-    getmaxyx(stdscr, max_y, max_x);
+    //1. int max_x = 0, max_y = 0;
+    //2. getmaxyx(stdscr, max_y, max_x);
     if (head->number == SNAKE1){
         setColor(head->number);
         mvprintw(0, max_x - 10, "LEVEL: %d", head->tsize);
@@ -334,67 +429,103 @@ void printLevel(struct snake *head) {
 }
 
 void printExit(struct snake *head) {
-    int max_x = 0, max_y = 0;
-    getmaxyx(stdscr, max_y, max_x);
+    //1. int max_x = 0, max_y = 0;
+    //2. getmaxyx(stdscr, max_y, max_x);
     mvprintw(max_y / 2, max_x / 2 - 5, "Your LEVEL is %d", head->tsize);
 }
 
 _Bool isCrash(struct snake *head) {
+	//5. разрешаем движение назад
+	return 0;
+	
     for (size_t i = 1; i < head->tsize; i++)
         if (head->x == head->tail[i].x && head->y == head->tail[i].y)
             return 1;
     return 0;
 }
 
+/*
+#ifndef is_term_resized
+
+_Bool is_term_resized(int x, int y) {
+	return is_termresized();
+}
+
+
+#endif
+*/
+
+//1. новая функция очищает экран, если поменялся размер
+void checkSize(void) {
+	if(is_termresized()) { // for Linux is_term_resized(int, int)
+		resize_term(0, 0);
+		getmaxyx(stdscr, max_y, max_x);
+		clear();
+		curs_set(FALSE);    //Отключаем курсор
+		setColor(0);
+		printHelp(" Use arrows for control. Press 'q' for EXIT");
+		printLevel(&snake[0]);
+		printLevel(&snake[1]);
+	}
+}
+
+
 int main() {
-    char ch[] = "*";
-    int x = 0, y = 0, key_pressed = 0;
-    init(&snake, 1, tail, START_TAIL_SIZE); //РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ, С…РІРѕСЃС‚ = 3
-    init(&snake2, 2, tail2, START_TAIL_SIZE); //РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ, С…РІРѕСЃС‚ = 3
+    //char ch[] = "*";
+    //int x = 0, y = 0, key_pressed = 0;
+    int key_pressed = 0;
+    initscr();            // Старт curses mod
+	getmaxyx(stdscr, max_y, max_x); //1. проверяем размер экрана централизовано
+    init(&snake[0], 1, tail[0], START_TAIL_SIZE); //Инициализация, хвост = 3
+    init(&snake[1], 2, tail[1], START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
-    initscr();            // РЎС‚Р°СЂС‚ curses mod
-    keypad(stdscr, TRUE); // Р’РєР»СЋС‡Р°РµРј F1, F2, СЃС‚СЂРµР»РєРё Рё С‚.Рґ.
-    raw();                // РћС‚РєРґСЋС‡Р°РµРј line buffering
-    noecho();            // РћС‚РєР»СЋС‡Р°РµРј echo() СЂРµР¶РёРј РїСЂРё РІС‹Р·РѕРІРµ getch
-    curs_set(FALSE);    //РћС‚РєР»СЋС‡Р°РµРј РєСѓСЂСЃРѕСЂ
-    printHelp("  Use arrows for control. Press 'q' for EXIT");
+	checkSize(); //1. проверяем изменение размера экрана централизовано
+    keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
+    raw();                // Отключаем line buffering
+    noecho();            // Отключаем echo() режим при вызове getch
+    curs_set(FALSE);    //Отключаем курсор
+    printHelp(" Use arrows for control. Press 'q' for EXIT");
+	printLevel(&snake[0]);
+	printLevel(&snake[1]);
     start_color();
+    init_pair(0, COLOR_WHITE, COLOR_BLACK); // text color
     init_pair(1, COLOR_RED, COLOR_BLACK);
-    init_pair(2, COLOR_BLUE, COLOR_BLACK);
+    init_pair(2, COLOR_YELLOW, COLOR_BLACK); // blue is dark
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
-    putFood(food, SEED_NUMBER);// РљР»Р°РґРµРј Р·РµСЂРЅР°
-    timeout(0);    //РћС‚РєР»СЋС‡Р°РµРј С‚Р°Р№РјР°СѓС‚ РїРѕСЃР»Рµ РЅР°Р¶Р°С‚РёСЏ РєР»Р°РІРёС€Рё РІ С†РёРєР»Рµ
+    putFood(food, SEED_NUMBER);// Кладем зерна
+    timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while (key_pressed != STOP_GAME) {
-        key_pressed = getch(); // РЎС‡РёС‚С‹РІР°РµРј РєР»Р°РІРёС€Сѓ
-        if (checkDirection(snake.direction, key_pressed)) //РџСЂРѕРІРµСЂРєР° РєРѕСЂСЂРµРєС‚РЅРѕСЃС‚Рё СЃРјРµРЅС‹ РЅР°РїСЂР°РІР»РµРЅРёСЏ
+		checkSize(); //1. проверяем изменение размера экрана централизовано
+		key_pressed = getch(); // Считываем клавишу
+        if (checkDirection(snake[0].direction, key_pressed)) //Проверка корректности смены направления
         {
-            changeDirection(&snake.direction, key_pressed); // РњРµРЅСЏРµРј РЅР°РїР°СЂРІР»РµРЅРёРµ РґРІРёР¶РµРЅРёСЏ
+            changeDirection(&snake[0].direction, key_pressed); // Меняем напарвление движения
         }
-        autoChangeDirection(&snake2, food, SEED_NUMBER);
-        if (isCrash(&snake))
+        autoChangeDirection(&snake[1], food, SEED_NUMBER);
+        if (isCrash(&snake[0]))
             break;
-        go(&snake); // Р РёСЃСѓРµРј РЅРѕРІСѓСЋ РіРѕР»РѕРІСѓ
-        goTail(&snake); //Р РёСЃСѓРµРј С…РІРѕСЃС‚
-        go(&snake2); // Р РёСЃСѓРµРј РЅРѕРІСѓСЋ РіРѕР»РѕРІСѓ
-        goTail(&snake2); //Р РёСЃСѓРµРј С…РІРѕСЃС‚
-        if (haveEat(&snake, food)) {
-            addTail(&snake);
-            printLevel(&snake);
+        go(&snake[0]); // Рисуем новую голову
+        goTail(&snake[0]); //Рисуем хвост
+        go(&snake[1]); // Рисуем новую голову
+        goTail(&snake[1]); //Рисуем хвост
+        if (haveEat(&snake[0], food)) {
+            addTail(&snake[0]);
+            printLevel(&snake[0]);
         }
-        if (haveEat(&snake2, food)) {
-            addTail(&snake2);
-            printLevel(&snake2);
+        if (haveEat(&snake[1], food)) {
+            addTail(&snake[1]);
+            printLevel(&snake[1]);
         }
-        refreshFood(food, SEED_NUMBER);// РћР±РЅРѕРІР»СЏРµРј РµРґСѓ
-        repairSeed(food, SEED_NUMBER, &snake);
+        refreshFood(food, SEED_NUMBER);// Обновляем еду
+        repairSeed(food, SEED_NUMBER, &snake[0]);
         blinkFood(food, SEED_NUMBER);
-        timeout(100); // Р—Р°РґРµСЂР¶РєР° РїСЂРё РѕС‚СЂРёСЃРѕРІРєРµ
+        timeout(100); // Задержка при отрисовке
     }
     setColor(SNAKE1);
-    printExit(&snake);
+    printExit(&snake[0]);
     timeout(SPEED);
     getch();
-    endwin(); // Р—Р°РІРµСЂС€Р°РµРј СЂРµР¶РёРј curses mod
+    endwin(); // Завершаем режим curses mod
 
     return 0;
 }
