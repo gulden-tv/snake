@@ -27,7 +27,7 @@ download:
 	git push origin lesson3
 
 upload:
-	git stash drop
+	git stash 
 	git pull origin lesson3
 
 
