@@ -23,7 +23,7 @@
         uint8_t enable;
     }food;
 
-    extern food food1[MAX_FOOD_SIZE];
+    extern food corn[MAX_FOOD_SIZE];
 
     //Инициализация еды
     void initFood(food f[], size_t size); 

@@ -1,8 +1,8 @@
 #include "../inc/snake.h"
 
 
-tail tail1[MAX_TAIL_SIZE], tail2[MAX_TAIL_SIZE];
-snake snake1, snake2;
+tail snake_user_tail[MAX_TAIL_SIZE], snake_robot_tail[MAX_TAIL_SIZE];
+snake snake_user, snake_robot;
 
 //Инициализация хвоста змеи
 void initTail(tail t[], size_t size) 
@@ -107,11 +107,11 @@ void printLevel(snake *head)
 {
     int max_x = 0, max_y = 0;
     getmaxyx(stdscr, max_y, max_x);
-    if (head->number == SNAKE1){
+    if (head->number == SNAKE_USER_NUMBER){
         setColor(head->number);
         mvprintw(0, max_x - 10, "LEVEL: %d", head->tsize);
     }
-    if (head->number == SNAKE2){
+    if (head->number == SNAKE_ROBOT_NUMBER){
         setColor(head->number);
         mvprintw(1, max_x - 10, "LEVEL: %d", head->tsize);
     }    

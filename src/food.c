@@ -1,6 +1,6 @@
 #include "../inc/food.h"
 
-food food1[MAX_FOOD_SIZE];
+food corn[MAX_FOOD_SIZE];
 
 void initFood(food f[], size_t size) 
 {
@@ -28,7 +28,7 @@ void putFoodSeed(food *fp)
     fp->point = '$';
     fp->enable = 1;
     spoint[0] = fp->point;
-    setColor(FOOD);
+    setColor(FOOD_NUMBER);
     mvprintw(fp->y, fp->x, spoint);
 }
 
@@ -40,7 +40,7 @@ void blinkFood(food fp[], size_t nfood)
     for (size_t i = 0; i < nfood; i++) {
         if (fp[i].enable && (current_time - fp[i].put_time) > 6) {
             spoint[0] = (current_time % 2) ? 'S' : 's';
-            setColor(FOOD);
+            setColor(FOOD_NUMBER);
             mvprintw(fp[i].y, fp[i].x, spoint);
         }
     }

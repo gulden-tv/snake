@@ -55,7 +55,7 @@
     //Определяет врезалась ли голова змеи в хвост змеи
     _Bool isCrash(snake *head); 
 
-    extern tail tail1[MAX_TAIL_SIZE], tail2[MAX_TAIL_SIZE];
-    extern snake snake1, snake2;
+    extern tail snake_user_tail[MAX_TAIL_SIZE], snake_robot_tail[MAX_TAIL_SIZE];
+    extern snake snake_user, snake_robot;
 
 #endif
