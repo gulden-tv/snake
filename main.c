@@ -235,6 +235,9 @@ void addTail(struct snake *head) {
     head->tsize++;
 }
 
+/*
+ Вывод справки
+*/
 void printHelp(char *s) {
     mvprintw(0, 0, s);
 }
