@@ -7,7 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-//#include <curses.h>
+#include <sys/time.h>
+#include <ncurses.h>
 #include <inttypes.h>
 #include <wchar.h>
 
@@ -28,6 +29,8 @@ enum{
     SNAKE2 = 2,
     FOOD = 3
 };
+
+struct timeval start, current, end;
 
 /*
  Хвост этто массив состоящий из координат x,y
@@ -333,6 +336,16 @@ void printLevel(struct snake *head) {
     }
 }
 
+void printTime()
+{
+    gettimeofday(&current,NULL);
+    int x_position, y_position = 0;
+    x_position = getmaxx(stdscr)/2;
+    long seconds = (current.tv_sec - start.tv_sec);
+    mvprintw(y_position,x_position,"Time played: %d",seconds);
+}
+
+
 void printExit(struct snake *head) {
     int max_x = 0, max_y = 0;
     getmaxyx(stdscr, max_y, max_x);
@@ -408,6 +421,7 @@ int main() {
     noecho();            // Отключаем echo() режим при вызове getch
     curs_set(FALSE);    //Отключаем курсор
     printHelp("  Use arrows for control. Press 'q' for EXIT");
+    gettimeofday(&start,NULL);
     start_color();
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
@@ -438,6 +452,7 @@ int main() {
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
+        printTime();
         timeout(100); // Задержка при отрисовке
     }
     setColor(SNAKE1);
@@ -445,6 +460,5 @@ int main() {
     timeout(SPEED);
     getch();
     endwin(); // Завершаем режим curses mod
-
     return 0;
 }
