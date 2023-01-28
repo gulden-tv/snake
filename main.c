@@ -1,15 +1,11 @@
-/*
- * Для компиляции необходимо добавить ключ -lncurses
- * gcc -o snake main.c -lncurses
- Vallen-snake
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <curses.h>
 #include <inttypes.h>
 #include <wchar.h>
+
+int z = 0;
 
 enum {
     LEFT = 1, UP, RIGHT, DOWN, STOP_GAME = 'q'
@@ -20,13 +16,15 @@ enum {
     MAX_FOOD_SIZE = 20,
     FOOD_EXPIRE_SECONDS = 10,
     SPEED = 20000,
-    SEED_NUMBER = 3
+    SEED_NUMBER = 10
 };
 
 enum{
     SNAKE1 = 1,
     SNAKE2 = 2,
-    FOOD = 3
+    FOOD1 = 3,
+    FOOD2 = 4,
+    FOOD3 = 5
 };
 
 /*
@@ -72,6 +70,8 @@ void setColor(int objectType){
     attroff(COLOR_PAIR(1));
     attroff(COLOR_PAIR(2));
     attroff(COLOR_PAIR(3));
+    attroff(COLOR_PAIR(4));
+    attroff(COLOR_PAIR(5));
     switch (objectType){
         case 1:{ // SNAKE1
             attron(COLOR_PAIR(1));
@@ -83,6 +83,14 @@ void setColor(int objectType){
         }
         case 3:{ // FOOD
             attron(COLOR_PAIR(3));
+            break;
+        }
+        case 4:{ // FOOD
+            attron(COLOR_PAIR(4));
+            break;
+        }
+        case 5:{ // FOOD
+            attron(COLOR_PAIR(5));
             break;
         }
     }
@@ -144,26 +152,6 @@ void changeDirection(int32_t *new_direction, int32_t key) {
             break;
     }
 }
-
-
-int distance(const struct snake snake, const struct food food) {   // вычисляет количество ходов до еды
-    return (abs(snake.x - food.x) + abs(snake.y - food.y));
-}
-
-void autoChangeDirection(struct snake *snake, struct food food[], int foodSize) {
-    int pointer = 0;
-    for (int i = 1; i < foodSize; i++) {   // ищем ближайшую еду
-        pointer = (distance(*snake, food[i]) < distance(*snake, food[pointer])) ? i : pointer;
-    }
-    if ((snake->direction == RIGHT || snake->direction == LEFT) &&
-        (snake->y != food[pointer].y)) {  // горизонтальное движение
-        snake->direction = (food[pointer].y > snake->y) ? DOWN : UP;
-    } else if ((snake->direction == DOWN || snake->direction == UP) &&
-               (snake->x != food[pointer].x)) {  // вертикальное движение
-        snake->direction = (food[pointer].x > snake->x) ? RIGHT : LEFT;
-    }
-}
-
 
 int checkDirection(int32_t dir, int32_t key) {
     if (KEY_DOWN == key && dir == UP || KEY_UP == key && dir == DOWN || KEY_LEFT == key && dir == RIGHT ||
@@ -243,6 +231,7 @@ void printHelp(char *s) {
  Обновить/разместить текущее зерно на поле
  */
 void putFoodSeed(struct food *fp) {
+	int a = rand()%3;
     int max_x = 0, max_y = 0;
     char spoint[2] = {0};
     getmaxyx(stdscr, max_y, max_x);
@@ -250,21 +239,49 @@ void putFoodSeed(struct food *fp) {
     fp->x = rand() % (max_x - 1);
     fp->y = rand() % (max_y - 2) + 1; //Не занимаем верхнюю строку
     fp->put_time = time(NULL);
-    fp->point = '$';
-    fp->enable = 1;
-    spoint[0] = fp->point;
-    setColor(FOOD);
-    mvprintw(fp->y, fp->x, spoint);
+    if(a == 0) {
+		fp->point = '$';
+		fp->enable = 1;
+		spoint[0] = fp->point;
+		setColor(FOOD1);
+		mvprintw(fp->y, fp->x, spoint);
+	}
+	if(a == 1) {
+		fp->point = '|';
+		fp->enable = 1;
+		spoint[0] = fp->point;
+		setColor(FOOD2);
+		mvprintw(fp->y, fp->x, spoint);
+	}
+	if(a == 2) {
+		fp->point = 'X';
+		fp->enable = 1;
+		spoint[0] = fp->point;
+		setColor(FOOD3);
+		mvprintw(fp->y, fp->x, spoint);
+	}
+
 }
 
+// Мигаем зерном, перед тем как оно исчезнет
 // Мигаем зерном, перед тем как оно исчезнет
 void blinkFood(struct food fp[], size_t nfood) {
     time_t current_time = time(NULL);
     char spoint[2] = {0}; // как выглядит зерно '$','\0'
     for (size_t i = 0; i < nfood; i++) {
         if (fp[i].enable && (current_time - fp[i].put_time) > 6) {
-            spoint[0] = (current_time % 2) ? 'S' : 's';
-            setColor(FOOD);
+			if(fp[i].point == '$'){
+				spoint[0] = (current_time % 2) ? 'S' : 's';
+				setColor(FOOD1);
+            }
+            if(fp[i].point == 'X'){
+				spoint[0] = (current_time % 2) ? '|' : '/';
+				setColor(FOOD2);
+            }
+            if(fp[i].point == '|'){
+				spoint[0] = (current_time % 2) ? 'X' : 'x';
+				setColor(FOOD3);
+            }
             mvprintw(fp[i].y, fp[i].x, spoint);
         }
     }
@@ -311,13 +328,21 @@ void refreshFood(struct food f[], int nfood) {
     }
 }
 
-_Bool haveEat(struct snake *head, struct food f[]) {
-    for (size_t i = 0; i < MAX_FOOD_SIZE; i++)
-        if (f[i].enable && head->x == f[i].x && head->y == f[i].y) {
-            f[i].enable = 0;
-            return 1;
+void haveEat(struct snake *head, struct food f[]) {
+    for (size_t i = 0; i < MAX_FOOD_SIZE; i++){
+        if (f[i].enable && head->x == f[i].x && head->y == f[i].y &&(f[i].point == 'S' || f[i].point == '$' || f[i].point == 's')) {
+			head->tsize+=3;
+            f[i].enable = 0;     
         }
-    return 0;
+        if (f[i].enable && head->x == f[i].x && head->y == f[i].y &&(f[i].point == 'X' || f[i].point == 'x')) {
+			head->tsize++;
+            f[i].enable = 0; 
+        }
+        if (f[i].enable && head->x == f[i].x && head->y == f[i].y &&(f[i].point == '|' || f[i].point == '/')) {
+			z = 13;
+            f[i].enable = 0; 
+        }
+	}
 }
 
 void printLevel(struct snake *head) {
@@ -365,6 +390,18 @@ void startMenu()
     attron(COLOR_PAIR(1));
 	mvprintw(1, 1, "1. Start");
     attroff(COLOR_PAIR(1));
+    
+    attron(COLOR_PAIR(3));
+	mvprintw(1, 20, "$ give your tail +3");
+    attroff(COLOR_PAIR(3));
+    
+    attron(COLOR_PAIR(3));
+	mvprintw(3, 20, "X give your tail +1");
+    attroff(COLOR_PAIR(3));
+    
+    attron(COLOR_PAIR(3));
+	mvprintw(5, 20, "| crush game");
+    attroff(COLOR_PAIR(3));
 
     attron(COLOR_PAIR(2));
     mvprintw(3, 1, "2. Exit");
@@ -412,6 +449,8 @@ int main() {
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
+    init_pair(4, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(5, COLOR_MAGENTA, COLOR_BLACK);
     putFood(food, SEED_NUMBER);// Кладем зерна
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while (key_pressed != STOP_GAME) {
@@ -420,21 +459,11 @@ int main() {
         {
             changeDirection(&snake.direction, key_pressed); // Меняем напарвление движения
         }
-        autoChangeDirection(&snake2, food, SEED_NUMBER);
-        if (isCrash(&snake))
+        if (isCrash(&snake) || z == 13)
             break;
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
-        go(&snake2); // Рисуем новую голову
-        goTail(&snake2); //Рисуем хвост
-        if (haveEat(&snake, food)) {
-            addTail(&snake);
-            printLevel(&snake);
-        }
-        if (haveEat(&snake2, food)) {
-            addTail(&snake2);
-            printLevel(&snake2);
-        }
+		haveEat(&snake, food);
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
@@ -448,3 +477,4 @@ int main() {
 
     return 0;
 }
+
