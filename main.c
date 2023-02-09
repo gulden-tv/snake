@@ -257,6 +257,17 @@ void putFoodSeed(struct food *fp) {
     mvprintw(fp->y, fp->x, spoint);
 }
 
+// Увеличение скорости
+int increaseSpeed(struct snake *head) {
+    int speed = 100;
+
+    speed -= head->tsize * 2;
+
+    if (speed < 20) speed = 20;
+
+    return (speed);
+}
+
 // Мигаем зерном, перед тем как оно исчезнет
 void blinkFood(struct food fp[], size_t nfood) {
     time_t current_time = time(NULL);
@@ -438,7 +449,7 @@ int main() {
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
-        timeout(100); // Задержка при отрисовке
+        timeout(increaseSpeed(&snake)); // Задержка при отрисовке
     }
     setColor(SNAKE1);
     printExit(&snake);
