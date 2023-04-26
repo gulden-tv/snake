@@ -11,6 +11,36 @@
 #include <inttypes.h>
 #include <wchar.h>
 
+#define LOGOWIDTH 83
+#define LOGOHEIGHT 25
+
+char logo[][83] = {
+	"                       ppBBBBBBBBBBBBmp",
+	"                     pBBBBBBBBBBBBBBBBBBBBBBBBBNNpp",
+	"                   pBBBBBBBBBNMPPPMNBBBBBBBBBBBBBBBBNp",
+	"                  BBBBBBBN*           -*NBBBBBBppJNBBBBp",
+	"                 BBBBBBB                  BBBBBBBBBBBBBBBN",
+	"                jBBBBBB                    -**PPPPMNBBBBBB",
+	"                jBBBBBB                                   K",
+	"                 BBBBBBK                                  Nmpp*",
+	"                 JBBBBBBN-                                    -",
+	"                  *BBBBBBBBpp                          -ppppmNBBBBBBBBBBBBBNp",
+	"                    *BBBBBBBBBBBBBNmpppppppppppNBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBN",
+	"                       *NBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBNMMMMMBBBBBBBBBBK",
+	"      ppBBBBBBBBBBNmpppp   -***MNBBBBBBBBBBBBBBBBNNMP***-             8BBBBBBBBK",
+   	"pBBBBBBBBBBBBBBBBBBBBBBBBBBBppppp                            pppNBBBBBBBBBBB-",
+	" JBBBBBBBN*********MNNBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBP",
+	" 1BBBBBBB              Jpp--**PNNBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBNP*",
+	"  NBBBBBBBBNppp        BBBBN      pmpp-  -7JI****PMMMMMMMMMMPP****--JppBBBNmp",
+	"    *NBBBBBBBBBBBBBNp  jBBBBBN   -BBBBN JBBBBBBN    pBBBN    pBBBBpBBBBBBBBBBBB",
+	"        -**MNBBBBBBBBBBpBBBBBBB-  BBBBB-BBBBPBBBBp jBBBBB  pBBBBBBBBBBP    -BBBB",
+	"C              *MBBBBBBBBBBBBBBBp BBBBBBBBBP  BBBBpjBBBBBBBBBBBP-8BBBBBBBBBBBBBB",
+	" Bp               BBBBBBBBBB-*BBBBBBBBBBBBBBNBBBBBBpBBBBBBBBBBC  BBBBBB*******-",
+	"  BBNp            8BBBBBNBBP  -BBBBBBBBBBBBP**BBBBBBBBBBB-*BBBBBpjBBBBN",
+	"   *BBBBBmppppppBBBBBBBPjBK    -BBBBBBBBBBB    BBBBBBBBBB   BBBBBBABBBBBNp - ppB",
+	"      *NBBBBBBBBBBBBP*  4N      -BBBBBBBBBK    jBBBBNBBBBP   *BBBBP *BBBBBBBBBP",
+	"           --  * -                -*- --*       -* - -**-      - -      ***-" };
+
 enum {
     LEFT = 1, UP, RIGHT, DOWN, STOP_GAME = 'q'
 };
@@ -67,6 +97,11 @@ struct snake {
     size_t tsize;
     struct tail *tail;
 } snake, snake2;
+
+void printLogo(void) {
+    for(unsigned char line = 0; line < LOGOHEIGHT; line++)
+        printf("%s\n", logo[line]);
+}
 
 void setColor(int objectType){
     attroff(COLOR_PAIR(1));
