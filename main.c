@@ -100,7 +100,7 @@ struct snake {
 
 void printLogo(void) {
     for(unsigned char line = 0; line < LOGOHEIGHT; line++)
-        printf("%s\n", logo[line]);
+        printw("%s\n", logo[line]);
 }
 
 void setColor(int objectType){
@@ -382,7 +382,11 @@ _Bool isCrash(struct snake *head) {
 }
 void startMenu()
 {
+    const unsigned char menuHeight = 10;
+    const unsigned char winHeight = LOGOHEIGHT + menuHeight;
+    const unsigned char winWidth = LOGOWIDTH;
     initscr();
+    resize_term(winHeight, winWidth);
     noecho();
 	curs_set(FALSE);
     cbreak();
@@ -393,21 +397,24 @@ void startMenu()
 		printf("Your terminal does not support color\n");
 		exit(1);
 	}
+
+    for(unsigned char i = 0; i < menuHeight; i++) 
+        for(unsigned char j = 0; j < winWidth; j++)
+            if(i == 0 || j == 0 || j == winWidth - 1)
+                mvprintw(i, j, "#");
+    printLogo();
+
+
 	start_color();
 	init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
 
     attron(COLOR_PAIR(1));
-	mvprintw(1, 1, "1. Start");
+	mvprintw(2, 2, "1. Start");
     attroff(COLOR_PAIR(1));
 
     attron(COLOR_PAIR(2));
-    mvprintw(3, 1, "2. Exit");
-    attron(COLOR_PAIR(1));
-            mvprintw(7, 30, "@**************                              ****************@");
-    attron(COLOR_PAIR(2));
-            mvprintw(10, 30, "   S N A K E    S N A K E    S N A K E     S N A K E     ");
-            mvprintw(13, 30, "@**************                              ****************@");
+    mvprintw(4, 2, "2. Exit");
 
     char ch = (int) NULL;
     while(1) {
