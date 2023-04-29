@@ -132,6 +132,94 @@ void init(struct snake *head, struct tail *tail, size_t size) {
     head->tsize = size+1;
 }
 
+//реализация "стреляющего" языка
+_Bool shootTonque (struct snake *head, struct food f[]){
+ char zn[]="+";
+ uint8_t nt=5;
+ switch (head->direction) {
+        case LEFT:
+            for(int i=1; i<=nt;i++)              //выстрелить языком
+            {
+             mvprintw(head->y, head->x-i, zn);
+            }
+            refresh();
+            usleep(10000);
+            for(int i=nt; i>=1;i--)              //втянуть язык
+            {
+             mvprintw(head->y, head->x-i, " ");
+            }
+            for(size_t i=0; i<MAX_FOOD_SIZE; i++) //проверить, совпадают ли координаты любого элемента языка с едой
+            {
+            if( f[i].enable && head->x-nt == f[i].x && head->y == f[i].y  ) {
+            f[i].enable = 0;
+            return 1;
+            }
+            }
+            break;
+        case RIGHT:
+            for(int i=1; i<=nt;i++)              //выстрелить языком
+            {
+             mvprintw(head->y, head->x+i, zn);
+            }
+            refresh();
+            usleep(10000);
+            for(int i=nt; i>=1;i--)              //втянуть язык
+            {
+             mvprintw(head->y, head->x+i, " ");
+            }
+            for(size_t i=0; i<MAX_FOOD_SIZE; i++) //проверить, совпадают ли координаты любого элемента языка с едой
+            {
+            if( f[i].enable && head->x+nt == f[i].x && head->y == f[i].y  ) {
+            f[i].enable = 0;
+            return 1;
+            }
+            }
+            break;
+        case UP:
+            for(int i=1; i<=nt;i++)              //выстрелить языком
+            {
+             mvprintw(head->y-i, head->x, zn);
+            }
+            refresh();
+            usleep(10000);
+            for(int i=nt; i>=1;i--)              //втянуть язык
+            {
+             mvprintw(head->y-i, head->x, " ");
+            }
+            for(size_t i=0; i<MAX_FOOD_SIZE; i++) //проверить, совпадают ли координаты любого элемента языка с едой
+            {
+            if( f[i].enable && head->x == f[i].x && head->y-nt == f[i].y  ) {
+            f[i].enable = 0;
+            return 1;
+            }
+            }
+            break;
+        case DOWN:
+            for(int i=1; i<=nt;i++)             //выстрелить языком
+            {
+             mvprintw(head->y+i, head->x, zn);
+            }
+            refresh();
+            usleep(10000);
+            for(int i=nt; i>=1;i--)             //втянуть язык
+            {
+             mvprintw(head->y+i, head->x, " ");
+            }
+            for(size_t i=0; i<MAX_FOOD_SIZE; i++) //проверить, совпадают ли координаты любого элемента языка с едой
+            {
+            if( f[i].enable && head->x == f[i].x && head->y+nt == f[i].y  ) {
+            f[i].enable = 0;
+            return 1;
+            }
+            }
+            break;
+         default:
+            return 0;
+    }
+
+}
+
+
 /*
  Движение хвоста с учетом движения головы
  */
@@ -252,7 +340,7 @@ int main()
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
     keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
-    
+
     raw();                // Откдючаем line buffering
     noecho();            // Отключаем echo() режим при вызове getch
     curs_set(FALSE);    //Отключаем курсор
@@ -261,6 +349,14 @@ int main()
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while( key_pressed != STOP_GAME ) {
         key_pressed = getch(); // Считываем клавишу
+        if(key_pressed=='z')
+        {
+            if(shootTonque(&snake, food))
+            {
+            addTail(&snake);
+            printLevel(&snake);
+            }
+        }
         changeDirection(&snake.direction, key_pressed); // Меняем напарвление движения
         if(isCrash(&snake))
             break;
@@ -278,6 +374,6 @@ int main()
     timeout(SPEED);
     getch();
     endwin(); // Завершаем режим curses mod
-    
+
     return 0;
 }
