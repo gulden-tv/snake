@@ -345,6 +345,7 @@ _Bool isCrash(struct snake *head) {
             return 1;
     return 0;
 }
+
 void startMenu()
 {
     initscr();
@@ -358,21 +359,23 @@ void startMenu()
 		printf("Your terminal does not support color\n");
 		exit(1);
 	}
-	start_color();
-	init_pair(1, COLOR_RED, COLOR_BLACK);
+
+    start_color();
+    init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
 
     attron(COLOR_PAIR(1));
-	mvprintw(1, 1, "1. Start");
+        mvprintw(1, 1, "1. Start");
     attroff(COLOR_PAIR(1));
 
     attron(COLOR_PAIR(2));
-    mvprintw(3, 1, "2. Exit");
+        mvprintw(3, 1, "2. Exit");
     attron(COLOR_PAIR(1));
-            mvprintw(7, 30, "@**************                              ****************@");
+        mvprintw(7, 30,  "@**************                          **************@");
     attron(COLOR_PAIR(2));
-            mvprintw(10, 30, "   S N A K E    S N A K E    S N A K E     S N A K E     ");
-            mvprintw(13, 30, "@**************                              ****************@");
+        mvprintw(10, 30, "    S N A K E    S N A K E    S N A K E    S N A K E    ");
+
+        mvprintw(13, 30, "@**************                          **************@");
 
     char ch = (int) NULL;
     while(1) {
@@ -395,10 +398,9 @@ void startMenu()
     getch();
     endwin();
 }
-int main() {
+
+void initGame() {
     startMenu();
-    char ch[] = "*";
-    int x = 0, y = 0, key_pressed = 0;
     init(&snake, 1, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
     init(&snake2, 2, tail2, START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
@@ -413,7 +415,17 @@ int main() {
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
     putFood(food, SEED_NUMBER);// Кладем зерна
+    printLevel(&snake);
+    printLevel(&snake2);
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
+}
+
+int main() {
+    initGame();
+
+    char ch[] = "*";
+    int x = 0, y = 0, key_pressed = 0;
+
     while (key_pressed != STOP_GAME) {
         key_pressed = getch(); // Считываем клавишу
         if (checkDirection(snake.direction, key_pressed)) //Проверка корректности смены направления
@@ -422,7 +434,7 @@ int main() {
         }
         autoChangeDirection(&snake2, food, SEED_NUMBER);
         if (isCrash(&snake))
-            break;
+            initGame();
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
         go(&snake2); // Рисуем новую голову
