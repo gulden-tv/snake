@@ -103,22 +103,22 @@ void go(struct snake *head) {
             if (head->x <= 0) // Циклическое движение, что бы не
                 // уходить за пределы экрана
                 head->x = max_x;
-            mvprintw(head->y, --(head->x), ch);
+            mvprintw(head->y, --(head->x), "%s", ch);
             break;
         case RIGHT:
             if (head->x >= max_x)
                 head->x = 0;
-            mvprintw(head->y, ++(head->x), ch);
+            mvprintw(head->y, ++(head->x), "%s", ch);
             break;
         case UP:
             if (head->y <= 0)
                 head->y = max_y;
-            mvprintw(--(head->y), head->x, ch);
+            mvprintw(--(head->y), head->x, "%s", ch);
             break;
         case DOWN:
             if (head->y >= max_y)
                 head->y = 0;
-            mvprintw(++(head->y), head->x, ch);
+            mvprintw(++(head->y), head->x, "%s", ch);
             break;
         default:
             break;
@@ -218,10 +218,40 @@ void goTail(struct snake *head) {
         head->tail[i] = head->tail[i - 1];
         if (head->tail[i].y || head->tail[i].x)
 
-            mvprintw(head->tail[i].y, head->tail[i].x, ch);
+            mvprintw(head->tail[i].y, head->tail[i].x, "%s", ch);
     }
     head->tail[0].x = head->x;
     head->tail[0].y = head->y;
+}
+
+/*
+ Переворот змеи
+ */
+void goReverse(struct snake *head) {
+    int temp_x, temp_y;
+    int n = head->tsize;
+
+    for(size_t i=0; i<n/2; i++) {
+        temp_x = head->tail[i].x;
+        temp_y = head->tail[i].y;
+        head->tail[i].x = head->tail[n-i-1].x;
+        head->tail[i].y = head->tail[n-i-1].y;
+        head->tail[n-i-1].x = temp_x;
+        head->tail[n-i-1].y = temp_y;
+    }
+    head->x = head->tail[0].x;
+    head->y = head->tail[0].y;
+}
+
+void reverseDirection(struct snake *head, int32_t *new_direction) {
+    if (head->tail[0].x < head->tail[1].x)
+         *new_direction = LEFT;
+    else if (head->tail[0].x > head->tail[1].x)
+         *new_direction = RIGHT;
+    else if (head->tail[0].y < head->tail[1].y)
+         *new_direction = UP;
+    else if (head->tail[0].y > head->tail[1].y)
+         *new_direction = DOWN;
 }
 
 /*
@@ -236,7 +266,7 @@ void addTail(struct snake *head) {
 }
 
 void printHelp(char *s) {
-    mvprintw(0, 0, s);
+    mvprintw(0, 0, "%s", s);
 }
 
 /*
@@ -254,7 +284,7 @@ void putFoodSeed(struct food *fp) {
     fp->enable = 1;
     spoint[0] = fp->point;
     setColor(FOOD);
-    mvprintw(fp->y, fp->x, spoint);
+    mvprintw(fp->y, fp->x, "%s", spoint);
 }
 
 // Мигаем зерном, перед тем как оно исчезнет
@@ -265,7 +295,7 @@ void blinkFood(struct food fp[], size_t nfood) {
         if (fp[i].enable && (current_time - fp[i].put_time) > 6) {
             spoint[0] = (current_time % 2) ? 'S' : 's';
             setColor(FOOD);
-            mvprintw(fp[i].y, fp[i].x, spoint);
+            mvprintw(fp[i].y, fp[i].x, "%s", spoint);
         }
     }
 }
@@ -275,7 +305,7 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
         for (size_t j = 0; j < nfood; j++) {
             /* Если хвост совпадает с зерном */
             if (f[j].x == head->tail[i].x && f[j].y == head->tail[i].y && f[i].enable) {
-                mvprintw(0, 0, "Repair tail seed %d", j);
+                mvprintw(0, 0, "Repair tail seed %ld", j);
                 putFoodSeed(&f[j]);
             }
         }
@@ -283,7 +313,7 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
         for (size_t j = 0; j < nfood; j++) {
             /* Если два зерна на одной точке */
             if (i != j && f[i].enable && f[j].enable && f[j].x == f[i].x && f[j].y == f[i].y && f[i].enable) {
-                mvprintw(0, 0, "Repair same seed %d", j);
+                mvprintw(0, 0, "Repair same seed %ld", j);
                 putFoodSeed(&f[j]);
             }
         }
@@ -325,18 +355,18 @@ void printLevel(struct snake *head) {
     getmaxyx(stdscr, max_y, max_x);
     if (head->number == SNAKE1){
         setColor(head->number);
-        mvprintw(0, max_x - 10, "LEVEL: %d", head->tsize);
+        mvprintw(0, max_x - 10, "LEVEL: %ld", head->tsize);
     }
     if (head->number == SNAKE2){
         setColor(head->number);
-        mvprintw(1, max_x - 10, "LEVEL: %d", head->tsize);
+        mvprintw(1, max_x - 10, "LEVEL: %ld", head->tsize);
     }
 }
 
 void printExit(struct snake *head) {
     int max_x = 0, max_y = 0;
     getmaxyx(stdscr, max_y, max_x);
-    mvprintw(max_y / 2, max_x / 2 - 5, "Your LEVEL is %d", head->tsize);
+    mvprintw(max_y / 2, max_x / 2 - 5, "Your LEVEL is %ld", head->tsize);
 }
 
 _Bool isCrash(struct snake *head) {
@@ -377,7 +407,7 @@ void startMenu()
 
         mvprintw(13, 30, "@**************                          **************@");
 
-    char ch = (int) NULL;
+    char ch = '\0';
     while(1) {
 		ch = getch();
         if(ch == '1') {
@@ -431,6 +461,10 @@ int main() {
         if (checkDirection(snake.direction, key_pressed)) //Проверка корректности смены направления
         {
             changeDirection(&snake.direction, key_pressed); // Меняем напарвление движения
+        }
+        else {
+            goReverse(&snake);
+            reverseDirection(&snake, &snake.direction);
         }
         autoChangeDirection(&snake2, food, SEED_NUMBER);
         if (isCrash(&snake))
