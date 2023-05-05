@@ -1,6 +1,9 @@
 /*
  * Для компиляции необходимо добавить ключ -lncurses
  * gcc -o snake main.c -lncurses
+ * Исправления от 05.05.23
+ * Длина языка равна длине хвоста
+ * Направление движение меняется только на перпендикулярное
  */
 
 #include <stdio.h>
@@ -87,19 +90,31 @@ void go(struct snake *head) {
     }
     refresh();
 }
-void changeDirection(int32_t *new_direction, int32_t key) {
+void changeDirection(struct snake *head, int32_t key) {  // int32_t *new_direction
     switch (key) {
         case KEY_DOWN: // стрелка вниз
-            *new_direction = DOWN;
+            if(head->direction!=UP)
+            {
+            head->direction = DOWN;
+            }
             break;
         case KEY_UP: // стрелка вверх
-            *new_direction = UP;
+            if(head->direction!=DOWN)
+            {
+            head->direction = UP;
+            }
             break;
         case KEY_LEFT: // стрелка влево
-            *new_direction = LEFT;
+            if(head->direction!=RIGHT)
+            {
+            head->direction = LEFT;
+            }
             break;
         case KEY_RIGHT: // стрелка вправо
-            *new_direction = RIGHT;
+            if(head->direction!=LEFT)
+            {
+            head->direction = RIGHT;
+            }
             break;
         default:
             break;
@@ -135,7 +150,7 @@ void init(struct snake *head, struct tail *tail, size_t size) {
 //реализация "стреляющего" языка
 _Bool shootTonque (struct snake *head, struct food f[]){
  char zn[]="+";
- uint8_t nt=5;
+ uint8_t nt=head->tsize;                          //длина языка равна длине хвоста
  switch (head->direction) {
         case LEFT:
             for(int i=1; i<=nt;i++)              //выстрелить языком
@@ -341,7 +356,7 @@ int main()
     initscr();            // Старт curses mod
     keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
 
-    raw();                // Откдючаем line buffering
+    raw();                // Отключаем line buffering
     noecho();            // Отключаем echo() режим при вызове getch
     curs_set(FALSE);    //Отключаем курсор
     printHelp("  Use arrows for control. Press 'q' for EXIT");
@@ -357,7 +372,7 @@ int main()
             printLevel(&snake);
             }
         }
-        changeDirection(&snake.direction, key_pressed); // Меняем напарвление движения
+        changeDirection(&snake, key_pressed); // Меняем направление движения &snake.direction
         if(isCrash(&snake))
             break;
         go(&snake); // Рисуем новую голову
