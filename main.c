@@ -1,6 +1,9 @@
 /*
  * Для компиляции необходимо добавить ключ -lncurses
  * gcc -o snake main.c -lncurses
+ * Исправления от 05.05.23
+ * Длина языка равна длине хвоста
+ * Направление движение меняется только на перпендикулярное
  */
 
 #include <stdio.h>
@@ -87,19 +90,31 @@ void go(struct snake *head) {
     }
     refresh();
 }
-void changeDirection(int32_t *new_direction, int32_t key) {
+void changeDirection(struct snake *head, int32_t key) {  // int32_t *new_direction
     switch (key) {
         case KEY_DOWN: // стрелка вниз
-            *new_direction = DOWN;
+            if(head->direction!=UP)
+            {
+            head->direction = DOWN;
+            }
             break;
         case KEY_UP: // стрелка вверх
-            *new_direction = UP;
+            if(head->direction!=DOWN)
+            {
+            head->direction = UP;
+            }
             break;
         case KEY_LEFT: // стрелка влево
-            *new_direction = LEFT;
+            if(head->direction!=RIGHT)
+            {
+            head->direction = LEFT;
+            }
             break;
         case KEY_RIGHT: // стрелка вправо
-            *new_direction = RIGHT;
+            if(head->direction!=LEFT)
+            {
+            head->direction = RIGHT;
+            }
             break;
         default:
             break;
@@ -131,6 +146,94 @@ void init(struct snake *head, struct tail *tail, size_t size) {
     head->tail = tail; // прикрепляем к голове хвост
     head->tsize = size+1;
 }
+
+//реализация "стреляющего" языка
+_Bool shootTonque (struct snake *head, struct food f[]){
+ char zn[]="+";
+ uint8_t nt=head->tsize;                          //длина языка равна длине хвоста
+ switch (head->direction) {
+        case LEFT:
+            for(int i=1; i<=nt;i++)              //выстрелить языком
+            {
+             mvprintw(head->y, head->x-i, zn);
+            }
+            refresh();
+            usleep(10000);
+            for(int i=nt; i>=1;i--)              //втянуть язык
+            {
+             mvprintw(head->y, head->x-i, " ");
+            }
+            for(size_t i=0; i<MAX_FOOD_SIZE; i++) //проверить, совпадают ли координаты любого элемента языка с едой
+            {
+            if( f[i].enable && head->x-nt == f[i].x && head->y == f[i].y  ) {
+            f[i].enable = 0;
+            return 1;
+            }
+            }
+            break;
+        case RIGHT:
+            for(int i=1; i<=nt;i++)              //выстрелить языком
+            {
+             mvprintw(head->y, head->x+i, zn);
+            }
+            refresh();
+            usleep(10000);
+            for(int i=nt; i>=1;i--)              //втянуть язык
+            {
+             mvprintw(head->y, head->x+i, " ");
+            }
+            for(size_t i=0; i<MAX_FOOD_SIZE; i++) //проверить, совпадают ли координаты любого элемента языка с едой
+            {
+            if( f[i].enable && head->x+nt == f[i].x && head->y == f[i].y  ) {
+            f[i].enable = 0;
+            return 1;
+            }
+            }
+            break;
+        case UP:
+            for(int i=1; i<=nt;i++)              //выстрелить языком
+            {
+             mvprintw(head->y-i, head->x, zn);
+            }
+            refresh();
+            usleep(10000);
+            for(int i=nt; i>=1;i--)              //втянуть язык
+            {
+             mvprintw(head->y-i, head->x, " ");
+            }
+            for(size_t i=0; i<MAX_FOOD_SIZE; i++) //проверить, совпадают ли координаты любого элемента языка с едой
+            {
+            if( f[i].enable && head->x == f[i].x && head->y-nt == f[i].y  ) {
+            f[i].enable = 0;
+            return 1;
+            }
+            }
+            break;
+        case DOWN:
+            for(int i=1; i<=nt;i++)             //выстрелить языком
+            {
+             mvprintw(head->y+i, head->x, zn);
+            }
+            refresh();
+            usleep(10000);
+            for(int i=nt; i>=1;i--)             //втянуть язык
+            {
+             mvprintw(head->y+i, head->x, " ");
+            }
+            for(size_t i=0; i<MAX_FOOD_SIZE; i++) //проверить, совпадают ли координаты любого элемента языка с едой
+            {
+            if( f[i].enable && head->x == f[i].x && head->y+nt == f[i].y  ) {
+            f[i].enable = 0;
+            return 1;
+            }
+            }
+            break;
+         default:
+            return 0;
+    }
+
+}
+
 
 /*
  Движение хвоста с учетом движения головы
@@ -252,8 +355,8 @@ int main()
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
     keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
-    
-    raw();                // Откдючаем line buffering
+
+    raw();                // Отключаем line buffering
     noecho();            // Отключаем echo() режим при вызове getch
     curs_set(FALSE);    //Отключаем курсор
     printHelp("  Use arrows for control. Press 'q' for EXIT");
@@ -261,7 +364,15 @@ int main()
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while( key_pressed != STOP_GAME ) {
         key_pressed = getch(); // Считываем клавишу
-        changeDirection(&snake.direction, key_pressed); // Меняем напарвление движения
+        if(key_pressed=='z')
+        {
+            if(shootTonque(&snake, food))
+            {
+            addTail(&snake);
+            printLevel(&snake);
+            }
+        }
+        changeDirection(&snake, key_pressed); // Меняем направление движения &snake.direction
         if(isCrash(&snake))
             break;
         go(&snake); // Рисуем новую голову
@@ -278,6 +389,6 @@ int main()
     timeout(SPEED);
     getch();
     endwin(); // Завершаем режим curses mod
-    
+
     return 0;
 }
