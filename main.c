@@ -52,6 +52,14 @@ struct snake {
 } snake;
 
 /*
+ Увеличить скорость
+*/
+#define STEP 10
+void increaseSpeed(int *speed) {
+    *speed -= STEP;
+}
+
+/*
  Движение головы с учетом текущего направления движения
  */
 void go(struct snake *head) {
@@ -248,6 +256,8 @@ int main()
 {
     char ch[]="*";
     int x=0, y=0, key_pressed=0;
+    int loopSpeed = 100;
+
     init(&snake, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
@@ -268,11 +278,12 @@ int main()
         goTail(&snake); //Рисуем хвост
         if(haveEat(&snake, food)) {
             addTail(&snake);
+            increaseSpeed(&loopSpeed);
             printLevel(&snake);
         }
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
-        timeout(100); // Задержка при отрисовке
+        timeout(loopSpeed); // Задержка при отрисовке
     }
     printExit(&snake);
     timeout(SPEED);
