@@ -3,6 +3,7 @@
  * gcc -o snake main.c -lncurses
  */
 
+#include <curses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -12,6 +13,9 @@
 
 enum {LEFT=1, UP=2, RIGHT=3, DOWN=4, STOP_GAME='q'};
 enum {MAX_TAIL_SIZE=1000, START_TAIL_SIZE=3, MAX_FOOD_SIZE=20, FOOD_EXPIRE_SECONDS=10, SPEED=20000, SEED_NUMBER=3};
+
+#define COLOR_BACKGROUND COLOR_WHITE
+enum {HEAD_PAIR=1, TAIL_PAIR, FOOD_PAIR, TEXT_PAIR, BACKGROUND_PAIR};
 
 /*
  Хвост этто массив состоящий из координат x,y
@@ -67,7 +71,10 @@ void go(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x); // macro - размер терминала
     //clear(); // очищаем весь экран
+    attron(COLOR_PAIR(BACKGROUND_PAIR));
     mvprintw(head->y, head->x, " "); // очищаем один символ
+    attroff(COLOR_PAIR(BACKGROUND_PAIR));
+    attron(COLOR_PAIR(HEAD_PAIR));
     switch (head->direction) {
         case LEFT:
             if(head->x <= 0) // Циклическое движение, что бы не
@@ -93,6 +100,7 @@ void go(struct snake *head) {
         default:
             break;
     }
+    attroff(COLOR_PAIR(HEAD_PAIR));
     refresh();
 }
 void changeDirection(int32_t *new_direction, int32_t key) {
@@ -145,12 +153,16 @@ void init(struct snake *head, struct tail *tail, size_t size) {
  */
 void goTail(struct snake *head) {
     char ch[] = "*";
+    attron(COLOR_PAIR(BACKGROUND_PAIR));
     mvprintw(head->tail[head->tsize-1].y, head->tail[head->tsize-1].x, " ");
+    attroff(COLOR_PAIR(BACKGROUND_PAIR));
+    attron(COLOR_PAIR(TAIL_PAIR));
     for(size_t i = head->tsize-1; i>0; i--) {
         head->tail[i] = head->tail[i-1];
         if( head->tail[i].y || head->tail[i].x)
             mvprintw(head->tail[i].y, head->tail[i].x, ch);
     }
+    attroff(COLOR_PAIR(TAIL_PAIR));
     head->tail[0].x = head->x;
     head->tail[0].y = head->y;
 }
@@ -166,7 +178,9 @@ void addTail(struct snake *head) {
     head->tsize++;
 }
 void printHelp(char *s) {
+    attron(COLOR_PAIR(TEXT_PAIR));
     mvprintw(0, 0, s);
+    attroff(COLOR_PAIR(TEXT_PAIR));
 }
 
 /*
@@ -176,14 +190,18 @@ void putFoodSeed(struct food *fp) {
     int max_x=0, max_y=0;
     char spoint[2] = {0};
     getmaxyx(stdscr, max_y, max_x);
+    attron(COLOR_PAIR(BACKGROUND_PAIR));
     mvprintw(fp->y, fp->x, " ");
+    attroff(COLOR_PAIR(BACKGROUND_PAIR));
     fp->x = rand() % (max_x - 1);
     fp->y = rand() % (max_y - 2) + 1; //Не занимаем верхнюю строку
     fp->put_time = time(NULL);
     fp->point = '$';
     fp->enable = 1;
     spoint[0] = fp->point;
+    attron(COLOR_PAIR(FOOD_PAIR));
     mvprintw(fp->y, fp->x, spoint);
+    attroff(COLOR_PAIR(FOOD_PAIR));
 }
 
 void repairSeed(struct food f[], size_t nfood, struct snake *head) {
@@ -236,12 +254,16 @@ _Bool haveEat(struct snake *head, struct food f[]) {
 void printLevel(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
+    attron(COLOR_PAIR(TEXT_PAIR));
     mvprintw(0, max_x-10, "LEVEL: %d", head->tsize);
+    attroff(COLOR_PAIR(TEXT_PAIR));
 }
 void printExit(struct snake *head) {
     int max_x=0, max_y=0;
     getmaxyx(stdscr, max_y, max_x);
+    attron(COLOR_PAIR(TEXT_PAIR));
     mvprintw(max_y/2, max_x/2-5, "Your LEVEL is %d", head->tsize);
+    attroff(COLOR_PAIR(TEXT_PAIR));
 }
 _Bool isCrash(struct snake *head) {
     for(size_t i=1; i<head->tsize; i++)
@@ -249,9 +271,17 @@ _Bool isCrash(struct snake *head) {
             return 1;
     return 0;
 }
-void setSpeed(struct snake *head) {
-    // ???
+
+void init_colors() {
+    start_color();
+    init_pair(HEAD_PAIR, COLOR_BLUE, COLOR_BACKGROUND);   
+    init_pair(TAIL_PAIR, COLOR_BLUE, COLOR_BACKGROUND);
+    init_pair(FOOD_PAIR, COLOR_RED, COLOR_BACKGROUND);
+    init_pair(TEXT_PAIR, COLOR_BLACK, COLOR_BACKGROUND);
+    init_pair(BACKGROUND_PAIR, COLOR_BACKGROUND, COLOR_BACKGROUND);
+    wbkgd(stdscr, COLOR_PAIR(BACKGROUND_PAIR));
 }
+
 int main()
 {
     char ch[]="*";
@@ -261,6 +291,7 @@ int main()
     init(&snake, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
+    init_colors();
     keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
     
     raw();                // Откдючаем line buffering
