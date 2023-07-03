@@ -20,13 +20,16 @@ enum {
     MAX_FOOD_SIZE = 20,
     FOOD_EXPIRE_SECONDS = 10,
     SPEED = 20000,
-    SEED_NUMBER = 3
+    SEED_NUMBER = 3,
+    WALL_SIZE=12,
+    WALL_NUM=8
 };
 
 enum{
     SNAKE1 = 1,
     SNAKE2 = 2,
-    FOOD = 3
+    FOOD = 3,
+    WALL = 4
 };
 
 /*
@@ -52,6 +55,11 @@ struct food {
     uint8_t enable;
 } food[MAX_FOOD_SIZE];
 
+struct wall {
+    int x[WALL_SIZE];
+    int y[WALL_SIZE];
+    char symb;
+} wall[WALL_NUM];
 /*
  Голова змейки содержит в себе
  x,y - координаты текущей позиции
@@ -198,6 +206,13 @@ void initFood(struct food f[], size_t size) {
     }
 }
 
+void initWall(struct wall w[], size_t WALL_NUM){
+    struct wall init = {0, 0, 0};
+    for (size_t i = 0; i < WALL_NUM; i++) {
+        w[i] = init;
+    }
+}
+
 void init(struct snake *head, int number, struct tail *tail, size_t size) {
     clear(); // очищаем весь экран
     initTail(tail, MAX_TAIL_SIZE);
@@ -257,6 +272,44 @@ void putFoodSeed(struct food *fp) {
     mvprintw(fp->y, fp->x, spoint);
 }
 
+void putFewWall(struct wall *w){
+    int max_x = 0, max_y = 0;
+    int dir;
+    char spoint[2] = {0};
+    getmaxyx(stdscr, max_y, max_x);
+    w->x[0] = rand() % (max_x - WALL_SIZE);
+    w->y[0] = rand() % (max_y - WALL_SIZE) + 1; //Не занимаем верхнюю строку
+    w->symb = '#';
+    spoint[0] = w->symb;
+    setColor(WALL);
+    mvprintw(w->y[0], w->x[0], spoint);
+    for(int i=1; i<WALL_SIZE; i++){
+        dir=rand()%4;
+        switch(dir){
+            case 0:
+                w->x[i]=(w->x[i-1])+1;
+                w->y[i]=w->y[i-1];
+                mvprintw(w->y[i], w->x[i], spoint);
+                break;
+            case 1:
+                w->x[i]=(w->x[i-1])-1;
+                w->y[i]=w->y[i-1];
+                mvprintw(w->y[i], w->x[i], spoint);
+                break;
+            case 2:
+                w->x[i]=(w->x[i-1]);
+                w->y[i]=w->y[i-1]+1;
+                mvprintw(w->y[i], w->x[i], spoint);
+                break;
+            case 3:
+                w->x[i]=(w->x[i-1]);
+                w->y[i]=w->y[i-1]-1;
+                mvprintw(w->y[i], w->x[i], spoint);
+                break;
+        }
+    }
+}
+
 // Мигаем зерном, перед тем как оно исчезнет
 void blinkFood(struct food fp[], size_t nfood) {
     time_t current_time = time(NULL);
@@ -295,6 +348,12 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
 void putFood(struct food f[], size_t number_seeds) {
     for (size_t i = 0; i < number_seeds; i++) {
         putFoodSeed(&f[i]);
+    }
+}
+
+void putWall(struct wall w[], size_t WALL_NUM) {
+    for (size_t i = 0; i < WALL_NUM; i++) {
+        putFewWall(&w[i]);
     }
 }
 
@@ -339,10 +398,18 @@ void printExit(struct snake *head) {
     mvprintw(max_y / 2, max_x / 2 - 5, "Your LEVEL is %d", head->tsize);
 }
 
-_Bool isCrash(struct snake *head) {
+_Bool isCrash(struct snake *head, struct wall *w) {
     for (size_t i = 1; i < head->tsize; i++)
         if (head->x == head->tail[i].x && head->y == head->tail[i].y)
             return 1;
+    for (size_t i = 0; i < WALL_NUM; i++){
+        for (size_t j = 0; j < WALL_SIZE; j++){
+            if (head->x == w->x[j] && head->y == w->y[j])
+                return 1;
+        }
+        *w++;
+    }
+
     return 0;
 }
 void startMenu()
@@ -351,7 +418,7 @@ void startMenu()
     noecho();
 	curs_set(FALSE);
     cbreak();
-
+    box(stdscr, '|', '-');
     if(has_colors() == FALSE)
 	{
         endwin();
@@ -360,30 +427,34 @@ void startMenu()
 	}
 	start_color();
 	init_pair(1, COLOR_RED, COLOR_BLACK);
-    init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(2, COLOR_BLUE, COLOR_BLACK);
 
     attron(COLOR_PAIR(1));
-	mvprintw(1, 1, "1. Start");
+	mvprintw(3, 3, "1. Start");
     attroff(COLOR_PAIR(1));
 
     attron(COLOR_PAIR(2));
-    mvprintw(3, 1, "2. Exit");
+    mvprintw(5, 3, "2. Exit");
     attron(COLOR_PAIR(1));
-            mvprintw(7, 30, "@**************                              ****************@");
-    attron(COLOR_PAIR(2));
-            mvprintw(10, 30, "   S N A K E    S N A K E    S N A K E     S N A K E     ");
             mvprintw(13, 30, "@**************                              ****************@");
-
-    char ch = (int) NULL;
+    attron(COLOR_PAIR(2));
+            mvprintw(16, 30, "   S N A K E    S N A K E    S N A K E     S N A K E     ");
+    attron(COLOR_PAIR(1));
+            mvprintw(19, 30, "@**************                              ****************@");
+    char ch;
     while(1) {
+
 		ch = getch();
         if(ch == '1') {
             clear();
             attron(COLOR_PAIR(2));
-            mvprintw(10, 50, "S N A K E ");
+            mvprintw(15, 53, "S N A K E ");
 
             attron(COLOR_PAIR(1));
             mvprintw(20, 50, "Press any key ...");
+            attroff(COLOR_PAIR(1));
+            attroff(COLOR_PAIR(2));
+            box(stdscr, '|', '-');
             break;
         }
 		else if(ch == '2') {
@@ -400,7 +471,8 @@ int main() {
     char ch[] = "*";
     int x = 0, y = 0, key_pressed = 0;
     init(&snake, 1, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
-    init(&snake2, 2, tail2, START_TAIL_SIZE); //Инициализация, хвост = 3
+    //init(&snake2, 2, tail2, START_TAIL_SIZE); //Инициализация, хвост = 3
+    initWall(wall, WALL_NUM);
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
     keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
@@ -412,7 +484,9 @@ int main() {
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
+    init_pair(4, COLOR_WHITE, COLOR_BLACK);
     putFood(food, SEED_NUMBER);// Кладем зерна
+    putWall(wall,WALL_NUM);
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while (key_pressed != STOP_GAME) {
         key_pressed = getch(); // Считываем клавишу
@@ -420,21 +494,24 @@ int main() {
         {
             changeDirection(&snake.direction, key_pressed); // Меняем напарвление движения
         }
-        autoChangeDirection(&snake2, food, SEED_NUMBER);
-        if (isCrash(&snake))
+        //autoChangeDirection(&snake2, food, SEED_NUMBER);
+        if (isCrash(&snake, wall)){
+            flash();
             break;
+        }
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
-        go(&snake2); // Рисуем новую голову
-        goTail(&snake2); //Рисуем хвост
+        //go(&snake2); // Рисуем новую голову
+        //goTail(&snake2); //Рисуем хвост
         if (haveEat(&snake, food)) {
             addTail(&snake);
+            beep();
             printLevel(&snake);
         }
-        if (haveEat(&snake2, food)) {
+        /*if (haveEat(&snake2, food)) {
             addTail(&snake2);
             printLevel(&snake2);
-        }
+        }*/
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
