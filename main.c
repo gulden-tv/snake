@@ -250,7 +250,7 @@ void putFoodSeed(struct food *fp) {
     fp->x = rand() % (max_x - 1);
     fp->y = rand() % (max_y - 2) + 1; //Не занимаем верхнюю строку
     fp->put_time = time(NULL);
-    fp->point = '$';
+    fp->point = 'P';
     fp->enable = 1;
     spoint[0] = fp->point;
     setColor(FOOD);
@@ -263,7 +263,7 @@ void blinkFood(struct food fp[], size_t nfood) {
     char spoint[2] = {0}; // как выглядит зерно '$','\0'
     for (size_t i = 0; i < nfood; i++) {
         if (fp[i].enable && (current_time - fp[i].put_time) > 6) {
-            spoint[0] = (current_time % 2) ? 'S' : 's';
+            spoint[0] = (current_time % 2) ? '!' : 'p';
             setColor(FOOD);
             mvprintw(fp[i].y, fp[i].x, spoint);
         }
