@@ -25,7 +25,7 @@ enum {
 
 enum{
     SNAKE1 = 1,
-    SNAKE2 = 2,
+    //SNAKE2 = 2,
     FOOD = 3
 };
 
@@ -66,21 +66,22 @@ struct snake {
     int direction;
     size_t tsize;
     struct tail *tail;
-} snake, snake2;
+} snake; 
+//snake2;
 
 void setColor(int objectType){
     attroff(COLOR_PAIR(1));
-    attroff(COLOR_PAIR(2));
+    //attroff(COLOR_PAIR(2));
     attroff(COLOR_PAIR(3));
     switch (objectType){
         case 1:{ // SNAKE1
             attron(COLOR_PAIR(1));
             break;
         }
-        case 2:{ // SNAKE2
-            attron(COLOR_PAIR(2));
-            break;
-        }
+        //case 2:{ // SNAKE2
+         //   attron(COLOR_PAIR(2));
+         // break;
+        //}
         case 3:{ // FOOD
             attron(COLOR_PAIR(3));
             break;
@@ -327,10 +328,10 @@ void printLevel(struct snake *head) {
         setColor(head->number);
         mvprintw(0, max_x - 10, "LEVEL: %d", head->tsize);
     }
-    if (head->number == SNAKE2){
+    /*if (head->number == SNAKE2){
         setColor(head->number);
         mvprintw(1, max_x - 10, "LEVEL: %d", head->tsize);
-    }
+    }*/
 }
 
 void printExit(struct snake *head) {
@@ -400,7 +401,7 @@ int main() {
     char ch[] = "*";
     int x = 0, y = 0, key_pressed = 0;
     init(&snake, 1, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
-    init(&snake2, 2, tail2, START_TAIL_SIZE); //Инициализация, хвост = 3
+    //init(&snake2, 2, tail2, START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
     keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
@@ -420,21 +421,21 @@ int main() {
         {
             changeDirection(&snake.direction, key_pressed); // Меняем напарвление движения
         }
-        autoChangeDirection(&snake2, food, SEED_NUMBER);
+        //autoChangeDirection(&snake2, food, SEED_NUMBER);
         if (isCrash(&snake))
             break;
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
-        go(&snake2); // Рисуем новую голову
-        goTail(&snake2); //Рисуем хвост
+        //go(&snake2); // Рисуем новую голову
+        //goTail(&snake2); //Рисуем хвост
         if (haveEat(&snake, food)) {
             addTail(&snake);
             printLevel(&snake);
         }
-        if (haveEat(&snake2, food)) {
-            addTail(&snake2);
-            printLevel(&snake2);
-        }
+        //if (haveEat(&snake2, food)) {
+        //    addTail(&snake2);
+        //    printLevel(&snake2);
+        //}
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
