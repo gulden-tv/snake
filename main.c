@@ -10,6 +10,7 @@
 #include <curses.h>
 #include <inttypes.h>
 #include <wchar.h>
+#include <locale.h>
 
 enum {
     LEFT = 1, UP, RIGHT, DOWN, STOP_GAME = 'q'
@@ -363,17 +364,16 @@ void startMenu()
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
 
     attron(COLOR_PAIR(1));
-	mvprintw(1, 1, "1. Start");
+	mvprintw(8, 1, "1. Start");
     attroff(COLOR_PAIR(1));
-
+    mvprintw(9, 1, "2. Exit");
     attron(COLOR_PAIR(2));
-    mvprintw(3, 1, "2. Exit");
-    attron(COLOR_PAIR(1));
-            mvprintw(7, 30, "@**************                              ****************@");
-    attron(COLOR_PAIR(2));
-            mvprintw(10, 30, "   S N A K E    S N A K E    S N A K E     S N A K E     ");
-            mvprintw(13, 30, "@**************                              ****************@");
-
+            mvprintw(1, 20, "░██████╗███╗░░██╗░█████╗░██╗░░██╗███████╗\n");
+            mvprintw(2, 20, "██╔════╝████╗░██║██╔══██╗██║░██╔╝██╔════╝");
+            mvprintw(3, 20, "╚█████╗░██╔██╗██║███████║█████═╝░█████╗░░");
+            mvprintw(4, 20, "░╚═══██╗██║╚████║██╔══██║██╔═██╗░██╔══╝░░");
+            mvprintw(5, 20, "██████╔╝██║░╚███║██║░░██║██║░╚██╗███████╗");
+            mvprintw(6, 20, "╚═════╝░╚═╝░░╚══╝╚═╝░░╚═╝╚═╝░░╚═╝╚══════╝");
     char ch = (int) NULL;
     while(1) {
 		ch = getch();
@@ -396,6 +396,7 @@ void startMenu()
     endwin();
 }
 int main() {
+    setlocale(LC_ALL, "");setlocale(LC_ALL, "");
     startMenu();
     char ch[] = "*";
     int x = 0, y = 0, key_pressed = 0;
