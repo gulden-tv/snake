@@ -11,6 +11,8 @@
 #include <inttypes.h>
 #include <wchar.h>
 
+#define UP_BORDER 3
+
 enum {
     LEFT = 1, UP, RIGHT, DOWN, STOP_GAME = 'q'
 };
@@ -26,7 +28,8 @@ enum {
 enum{
     SNAKE1 = 1,
     SNAKE2 = 2,
-    FOOD = 3
+    FOOD = 3,
+    OTHER_COLOR = 4,
 };
 
 /*
@@ -72,6 +75,7 @@ void setColor(int objectType){
     attroff(COLOR_PAIR(1));
     attroff(COLOR_PAIR(2));
     attroff(COLOR_PAIR(3));
+    attroff(COLOR_PAIR(OTHER_COLOR));
     switch (objectType){
         case 1:{ // SNAKE1
             attron(COLOR_PAIR(1));
@@ -83,6 +87,10 @@ void setColor(int objectType){
         }
         case 3:{ // FOOD
             attron(COLOR_PAIR(3));
+            break;
+        }
+        case OTHER_COLOR:{ // Other
+            attron(COLOR_PAIR(OTHER_COLOR));
             break;
         }
     }
@@ -106,18 +114,18 @@ void go(struct snake *head) {
             mvprintw(head->y, --(head->x), ch);
             break;
         case RIGHT:
-            if (head->x >= max_x)
-                head->x = 0;
+            if (head->x >= max_x - 1)
+                head->x = -1;
             mvprintw(head->y, ++(head->x), ch);
             break;
         case UP:
-            if (head->y <= 0)
+            if (head->y <= UP_BORDER)
                 head->y = max_y;
             mvprintw(--(head->y), head->x, ch);
             break;
         case DOWN:
-            if (head->y >= max_y)
-                head->y = 0;
+            if (head->y >= (max_y - 1))
+                head->y = UP_BORDER - 1;
             mvprintw(++(head->y), head->x, ch);
             break;
         default:
@@ -247,8 +255,8 @@ void putFoodSeed(struct food *fp) {
     char spoint[2] = {0};
     getmaxyx(stdscr, max_y, max_x);
     mvprintw(fp->y, fp->x, " ");
-    fp->x = rand() % (max_x - 1);
-    fp->y = rand() % (max_y - 2) + 1; //Не занимаем верхнюю строку
+    fp->x = rand() % max_x;
+    fp->y = rand() % (max_y - UP_BORDER) + UP_BORDER; //Не занимаем UP_BORDER верхних строк
     fp->put_time = time(NULL);
     fp->point = '$';
     fp->enable = 1;
@@ -275,7 +283,7 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
         for (size_t j = 0; j < nfood; j++) {
             /* Если хвост совпадает с зерном */
             if (f[j].x == head->tail[i].x && f[j].y == head->tail[i].y && f[i].enable) {
-                mvprintw(0, 0, "Repair tail seed %d", j);
+                mvprintw(1, 0, "Repair tail seed %d", j);
                 putFoodSeed(&f[j]);
             }
         }
@@ -283,7 +291,7 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
         for (size_t j = 0; j < nfood; j++) {
             /* Если два зерна на одной точке */
             if (i != j && f[i].enable && f[j].enable && f[j].x == f[i].x && f[j].y == f[i].y && f[i].enable) {
-                mvprintw(0, 0, "Repair same seed %d", j);
+                mvprintw(1, 0, "Repair same seed %d", j);
                 putFoodSeed(&f[j]);
             }
         }
@@ -395,6 +403,34 @@ void startMenu()
     getch();
     endwin();
 }
+
+/*
+ Обновить help и надпись с уровнем при изменении размера окна
+ */
+void refreshHelp() 
+{   
+    char ch = '_';
+    setColor(OTHER_COLOR);
+    static old_max_x = 0, old_max_y = 0;
+    int max_x, max_y;
+    getmaxyx(stdscr, max_y, max_x); // macro - размер терминала
+    if (max_x != old_max_x || max_y != old_max_y) {
+        old_max_x = max_x;
+        old_max_y = max_y;
+        for (int i = 0; i < max_x; i++) {
+            mvaddch(0, i, ' ');
+            mvaddch(1, i, ' ');
+            mvaddch(UP_BORDER-1, i, ch);
+        }
+
+
+        printHelp("  Use arrows for control. Press 'q' for EXIT");
+
+        printLevel(&snake);
+        printLevel(&snake2);
+    }
+}
+
 int main() {
     startMenu();
     char ch[] = "*";
@@ -407,11 +443,11 @@ int main() {
     raw();                // Откдючаем line buffering
     noecho();            // Отключаем echo() режим при вызове getch
     curs_set(FALSE);    //Отключаем курсор
-    printHelp("  Use arrows for control. Press 'q' for EXIT");
     start_color();
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
+    init_pair(OTHER_COLOR, COLOR_WHITE, COLOR_BLACK);
     putFood(food, SEED_NUMBER);// Кладем зерна
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while (key_pressed != STOP_GAME) {
@@ -438,6 +474,7 @@ int main() {
         refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
+        refreshHelp();
         timeout(100); // Задержка при отрисовке
     }
     setColor(SNAKE1);
