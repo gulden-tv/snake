@@ -16,7 +16,7 @@ enum {
 };
 enum {
     MAX_TAIL_SIZE = 1000,
-    START_TAIL_SIZE = 3,
+    START_TAIL_SIZE = 10,//old snake
     MAX_FOOD_SIZE = 20,
     FOOD_EXPIRE_SECONDS = 10,
     SPEED = 20000,
