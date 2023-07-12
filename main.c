@@ -26,7 +26,8 @@ enum {
 enum{
     SNAKE1 = 1,
     SNAKE2 = 2,
-    FOOD = 3
+    FOOD = 3,
+    POISON = 4
 };
 
 /*
@@ -68,6 +69,13 @@ struct snake {
     struct tail *tail;
 } snake, snake2;
 
+struct poison {
+    int x;
+    int y;
+    char view;
+    time_t show;
+} poison;
+
 void setColor(int objectType){
     attroff(COLOR_PAIR(1));
     attroff(COLOR_PAIR(2));
@@ -82,6 +90,10 @@ void setColor(int objectType){
             break;
         }
         case 3:{ // FOOD
+            attron(COLOR_PAIR(3));
+            break;
+        }
+        case 4:{// POISON
             attron(COLOR_PAIR(3));
             break;
         }
@@ -239,6 +251,19 @@ void printHelp(char *s) {
     mvprintw(0, 0, s);
 }
 
+/*
+ Положить яд
+ */
+void putPoison(struct poison *po)
+{
+    char buf[2] = {0};
+    int x = po->x = 50;
+    int y = po->y = 20;
+    po->view = 'W';
+    buf[0] = po->view;
+    setColor(POISON);
+    mvprintw(y, x, buf);
+}
 /*
  Обновить/разместить текущее зерно на поле
  */
@@ -412,7 +437,9 @@ int main() {
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
+    init_pair(4, COLOR_GREEN, COLOR_BLACK);
     putFood(food, SEED_NUMBER);// Кладем зерна
+    putPoison(&poison );
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while (key_pressed != STOP_GAME) {
         key_pressed = getch(); // Считываем клавишу
@@ -430,6 +457,12 @@ int main() {
         if (haveEat(&snake, food)) {
             addTail(&snake);
             printLevel(&snake);
+        }
+        if(snake.x == poison.x && snake.y == poison.y)
+        {
+            //если наткнулся на W, то "отравлен"
+            mvprintw(20, 50, "You are poisoned. Stop game");
+            break;
         }
         if (haveEat(&snake2, food)) {
             addTail(&snake2);
