@@ -11,6 +11,8 @@
 #include <inttypes.h>
 #include <wchar.h>
 
+char color = COLOR_RED;
+
 enum {
     LEFT = 1, UP, RIGHT, DOWN, STOP_GAME = 'q'
 };
@@ -235,6 +237,14 @@ void addTail(struct snake *head) {
     head->tsize++;
 }
 
+void delTail(struct snake *head) {
+    if (head == NULL || head->tsize > MAX_TAIL_SIZE) {
+        mvprintw(0, 0, "Can't del tail");
+        return;
+    }
+    head->tsize--;
+}
+
 void printHelp(char *s) {
     mvprintw(0, 0, s);
 }
@@ -361,6 +371,10 @@ void startMenu()
 	start_color();
 	init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(3, COLOR_WHITE, COLOR_BLACK);
+    init_pair(4, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(5, COLOR_CYAN, COLOR_BLACK);
+    init_pair(6, COLOR_GREEN, COLOR_BLACK);
 
     attron(COLOR_PAIR(1));
 	mvprintw(1, 1, "1. Start");
@@ -369,23 +383,76 @@ void startMenu()
     attron(COLOR_PAIR(2));
     mvprintw(3, 1, "2. Exit");
     attron(COLOR_PAIR(1));
-            mvprintw(7, 30, "@**************                              ****************@");
+
+    attron(COLOR_PAIR(1));
+    mvprintw(5, 1, "Please choose the color of the player:");
+    attron(COLOR_PAIR(1));
+
+    attron(COLOR_PAIR(1));
+	mvprintw(7, 1, "r. Red");
+    attroff(COLOR_PAIR(1));
+
     attron(COLOR_PAIR(2));
-            mvprintw(10, 30, "   S N A K E    S N A K E    S N A K E     S N A K E     ");
-            mvprintw(13, 30, "@**************                              ****************@");
+	mvprintw(9, 1, "y. Yellow");
+    attroff(COLOR_PAIR(2));
+
+    attron(COLOR_PAIR(3));
+	mvprintw(11, 1, "w. White");
+    attroff(COLOR_PAIR(3));
+
+    attron(COLOR_PAIR(4));
+	mvprintw(13, 1, "m. Magenta");
+    attroff(COLOR_PAIR(4));
+
+    attron(COLOR_PAIR(5));
+	mvprintw(15, 1, "c. Cyan");
+    attroff(COLOR_PAIR(5));
+
+    attron(COLOR_PAIR(6));
+	mvprintw(17, 1, "g. Grean");
+    attroff(COLOR_PAIR(6));
+
+
+
 
     char ch = (int) NULL;
     while(1) {
 		ch = getch();
+
         if(ch == '1') {
             clear();
             attron(COLOR_PAIR(2));
             mvprintw(10, 50, "S N A K E ");
 
+
             attron(COLOR_PAIR(1));
             mvprintw(20, 50, "Press any key ...");
             break;
         }
+        else     if (ch == 'r')
+                {
+					color = COLOR_RED;
+                }
+        else     if (ch == 'y')
+                {
+					color = COLOR_YELLOW;
+                }
+        else     if (ch == 'w')
+                {
+					color = COLOR_WHITE;
+                }
+        else     if (ch == 'm')
+                {
+					color = COLOR_MAGENTA;
+                }
+        else     if (ch == 'c')
+                {
+					color = COLOR_CYAN;
+                }
+        else     if (ch == 'g')
+                {
+					color = COLOR_GREEN;
+				}
 		else if(ch == '2') {
             endwin();
             exit(0);
@@ -409,7 +476,7 @@ int main() {
     curs_set(FALSE);    //Отключаем курсор
     printHelp("  Use arrows for control. Press 'q' for EXIT");
     start_color();
-    init_pair(1, COLOR_RED, COLOR_BLACK);
+    init_pair(1, color, COLOR_BLACK);
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
     putFood(food, SEED_NUMBER);// Кладем зерна
@@ -421,8 +488,8 @@ int main() {
             changeDirection(&snake.direction, key_pressed); // Меняем напарвление движения
         }
         autoChangeDirection(&snake2, food, SEED_NUMBER);
-        if (isCrash(&snake))
-            break;
+        if (isCrash(&snake)){
+            addTail}
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
         go(&snake2); // Рисуем новую голову
