@@ -20,7 +20,8 @@ enum {
     MAX_FOOD_SIZE = 20,
     FOOD_EXPIRE_SECONDS = 10,
     SPEED = 20000,
-    SEED_NUMBER = 3
+    SEED_NUMBER = 3,
+    BAD_SEED_NUMBER = 1
 };
 
 enum{
@@ -51,6 +52,14 @@ struct food {
     char point;
     uint8_t enable;
 } food[MAX_FOOD_SIZE];
+
+struct food_bad {
+    int x;
+    int y;
+    time_t put_time;
+    char point;
+    uint8_t enable;
+} food_bad[MAX_FOOD_SIZE];
 
 /*
  Голова змейки содержит в себе
@@ -198,6 +207,15 @@ void initFood(struct food f[], size_t size) {
     }
 }
 
+void initBadFood(struct food f[], size_t size) {
+    struct food init = {0, 0, 0, 0, 0};
+    int max_y = 0, max_x = 0;
+    getmaxyx(stdscr, max_y, max_x);
+    for (size_t i = 0; i < size; i++) {
+        f[i] = init;
+    }
+}
+
 void init(struct snake *head, int number, struct tail *tail, size_t size) {
     clear(); // очищаем весь экран
     initTail(tail, MAX_TAIL_SIZE);
@@ -220,6 +238,7 @@ void goTail(struct snake *head) {
 
             mvprintw(head->tail[i].y, head->tail[i].x, ch);
     }
+    mvprintw(head->tail[head->tsize].y, head->tail[head->tsize].x, " ");
     head->tail[0].x = head->x;
     head->tail[0].y = head->y;
 }
@@ -233,6 +252,14 @@ void addTail(struct snake *head) {
         return;
     }
     head->tsize++;
+}
+
+void missTail(struct snake *head) {
+    if (head == NULL) {
+        mvprintw(0, 0, "Can't add tail");
+        return;
+    }
+    head->tsize--;
 }
 
 void printHelp(char *s) {
@@ -257,6 +284,21 @@ void putFoodSeed(struct food *fp) {
     mvprintw(fp->y, fp->x, spoint);
 }
 
+void putBadFoodSeed(struct food *fp) {
+    int max_x = 0, max_y = 0;
+    char spoint[2] = {0};
+    getmaxyx(stdscr, max_y, max_x);
+    mvprintw(fp->y, fp->x, " ");
+    fp->x = rand() % (max_x - 1);
+    fp->y = rand() % (max_y - 2) + 1; //Не занимаем верхнюю строку
+    fp->put_time = time(NULL);
+    fp->point = 'X';
+    fp->enable = 1;
+    spoint[0] = fp->point;
+    setColor(FOOD);
+    mvprintw(fp->y, fp->x, spoint);
+}
+
 // Мигаем зерном, перед тем как оно исчезнет
 void blinkFood(struct food fp[], size_t nfood) {
     time_t current_time = time(NULL);
@@ -270,13 +312,25 @@ void blinkFood(struct food fp[], size_t nfood) {
     }
 }
 
+void blinkBadFood(struct food fp[], size_t nfood) {
+    time_t current_time = time(NULL);
+    char spoint[2] = {0}; // как выглядит зерно '$','\0'
+    for (size_t i = 0; i < nfood; i++) {
+        if (fp[i].enable && (current_time - fp[i].put_time) > 6) {
+            spoint[0] = (current_time % 2) ? 'X' : 'x';
+            setColor(FOOD);
+            mvprintw(fp[i].y, fp[i].x, spoint);
+        }
+    }
+}
+
 void repairSeed(struct food f[], size_t nfood, struct snake *head) {
     for (size_t i = 0; i < head->tsize; i++)
         for (size_t j = 0; j < nfood; j++) {
             /* Если хвост совпадает с зерном */
             if (f[j].x == head->tail[i].x && f[j].y == head->tail[i].y && f[i].enable) {
                 mvprintw(0, 0, "Repair tail seed %d", j);
-                putFoodSeed(&f[j]);
+                putBadFoodSeed(&f[j]);
             }
         }
     for (size_t i = 0; i < nfood; i++)
@@ -289,12 +343,36 @@ void repairSeed(struct food f[], size_t nfood, struct snake *head) {
         }
 }
 
+void repairBadSeed(struct food f[], size_t nfood, struct snake *head) {
+    for (size_t i = 0; i < head->tsize; i++)
+        for (size_t j = 0; j < nfood; j++) {
+            /* Если хвост совпадает с зерном */
+            if (f[j].x == head->tail[i].x && f[j].y == head->tail[i].y && f[i].enable) {
+                mvprintw(0, 0, "Repair tail seed %d", j);
+                putBadFoodSeed(&f[j]);
+            }
+        }
+    for (size_t i = 0; i < nfood; i++)
+        for (size_t j = 0; j < nfood; j++) {
+            /* Если два зерна на одной точке */
+            if (i != j && f[i].enable && f[j].enable && f[j].x == f[i].x && f[j].y == f[i].y && f[i].enable) {
+                mvprintw(0, 0, "Repair same seed %d", j);
+                putBadFoodSeed(&f[j]);
+            }
+        }
+}
+
 /*
  Разместить еду на поле
  */
 void putFood(struct food f[], size_t number_seeds) {
     for (size_t i = 0; i < number_seeds; i++) {
         putFoodSeed(&f[i]);
+    }
+}
+void putBadFood(struct food f[], size_t number_seeds) {
+    for (size_t i = 0; i < number_seeds; i++) {
+        putBadFoodSeed(&f[i]);
     }
 }
 
@@ -306,6 +384,18 @@ void refreshFood(struct food f[], int nfood) {
         if (f[i].put_time) {
             if (!f[i].enable || (time(NULL) - f[i].put_time) > FOOD_EXPIRE_SECONDS) {
                 putFoodSeed(&f[i]);
+            }
+        }
+    }
+}
+void refreshBadFood(struct food f[], int nfood) {
+    int max_x = 0, max_y = 0;
+    char spoint[2] = {0};
+    getmaxyx(stdscr, max_y, max_x);
+    for (size_t i = 0; i < nfood; i++) {
+        if (f[i].put_time) {
+            if (!f[i].enable || (time(NULL) - f[i].put_time) > FOOD_EXPIRE_SECONDS) {
+                putBadFoodSeed(&f[i]);
             }
         }
     }
@@ -402,6 +492,7 @@ int main() {
     init(&snake, 1, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
     init(&snake2, 2, tail2, START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
+    initBadFood(food_bad, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
     keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
     raw();                // Откдючаем line buffering
@@ -413,6 +504,7 @@ int main() {
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
     putFood(food, SEED_NUMBER);// Кладем зерна
+    putBadFood(food_bad, BAD_SEED_NUMBER);// Кладем плохие зерна
     timeout(0);    //Отключаем таймаут после нажатия клавиши в цикле
     while (key_pressed != STOP_GAME) {
         key_pressed = getch(); // Считываем клавишу
@@ -431,13 +523,20 @@ int main() {
             addTail(&snake);
             printLevel(&snake);
         }
+        if (haveEat(&snake, food_bad)) {
+            missTail(&snake);
+            printLevel(&snake);
+        }
         if (haveEat(&snake2, food)) {
             addTail(&snake2);
             printLevel(&snake2);
         }
         refreshFood(food, SEED_NUMBER);// Обновляем еду
+        refreshBadFood(food_bad, BAD_SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
+        repairBadSeed(food_bad, BAD_SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
+        blinkBadFood(food_bad, BAD_SEED_NUMBER);
         timeout(100); // Задержка при отрисовке
     }
     setColor(SNAKE1);
