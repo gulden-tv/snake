@@ -235,17 +235,6 @@ void addTail(struct snake *head) {
     head->tsize++;
 }
 
-/*
- Уменьшение хвоста на 1 элемент
- */
-void delTail(struct snake *head) {
-    if (head->tsize > START_TAIL_SIZE) {
-	    setColor(head->number);
-	    mvprintw(head->tail[head->tsize - 1].y, head->tail[head->tsize - 1].x, " "); //Очищаем кончик хвоста
-	    head->tsize--;
-    }
-}
-
 void printHelp(char *s) {
     mvprintw(0, 0, s);
 }
@@ -329,15 +318,6 @@ _Bool haveEat(struct snake *head, struct food f[]) {
             return 1;
         }
     return 0;
-}
-
-//Проверяем, пересек ли второй червь первого (откусил кусочек)
-_Bool Eaten(struct snake *head, struct snake *head2) {
-	for (size_t i = head->tsize - 1; i > 0; i--) {
-		if ((head->tail[i].x == head2->x) && (head->tail[i].y == head2->y))
-			return 1;
-	}
-	return 0;
 }
 
 void printLevel(struct snake *head) {
@@ -455,11 +435,7 @@ int main() {
             addTail(&snake2);
             printLevel(&snake2);
         }
-        if (Eaten (&snake, &snake2)) {  //Если второй червь пересек первого, отнимаем часть хвоста
-		delTail(&snake);
-		printLevel(&snake);
-	}	
-	refreshFood(food, SEED_NUMBER);// Обновляем еду
+        refreshFood(food, SEED_NUMBER);// Обновляем еду
         repairSeed(food, SEED_NUMBER, &snake);
         blinkFood(food, SEED_NUMBER);
         timeout(100); // Задержка при отрисовке
