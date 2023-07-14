@@ -12,7 +12,7 @@
 #include <wchar.h>
 
 enum {
-    LEFT = 1, UP, RIGHT, DOWN, STOP_GAME = 'q'
+    LEFT = 1, UP, RIGHT, DOWN, LUP ='r', RUP ='t' , LDOWN = 'd',RDOWN = 'f', STOP_GAME = 'q'
 };
 enum {
     MAX_TAIL_SIZE = 1000,
@@ -120,6 +120,34 @@ void go(struct snake *head) {
                 head->y = 0;
             mvprintw(++(head->y), head->x, ch);
             break;
+        case LUP:
+            if (head->y <= 0)
+                head->y = max_y;
+            if (head->x <= 0)
+                head->x = max_x;
+            mvprintw(--(head->y), --(head->x), ch);
+            break;
+        case RUP:
+            if (head->y <= 0)
+                head->y = max_y;
+            if (head->x >= max_x)
+                head->x = 0;
+            mvprintw(--(head->y), ++(head->x), ch);
+            break;
+        case LDOWN:
+            if (head->y >= max_y)
+                head->y = 0;
+            if (head->x <= 0)
+                head->x = max_x;
+            mvprintw(++(head->y), --(head->x), ch);
+            break;
+        case RDOWN:
+            if (head->y >= max_y)
+                head->y = 0;
+            if (head->x >= max_x)
+                head->x = 0;
+            mvprintw(++(head->y), ++(head->x), ch);
+            break;
         default:
             break;
     }
@@ -139,6 +167,18 @@ void changeDirection(int32_t *new_direction, int32_t key) {
             break;
         case KEY_RIGHT: // стрелка вправо
             *new_direction = RIGHT;
+            break;
+        case 'r': // влево вверх
+            *new_direction = LUP;
+            break;
+        case 't': // вправо вверх
+            *new_direction = RUP;
+            break;
+        case 'd': // влево вниз
+            *new_direction = LDOWN;
+            break;
+        case 'f': // вправо вниз
+            *new_direction = RDOWN;
             break;
         default:
             break;
@@ -400,7 +440,6 @@ int main() {
     char ch[] = "*";
     int x = 0, y = 0, key_pressed = 0;
     init(&snake, 1, tail, START_TAIL_SIZE); //Инициализация, хвост = 3
-    init(&snake2, 2, tail2, START_TAIL_SIZE); //Инициализация, хвост = 3
     initFood(food, MAX_FOOD_SIZE);
     initscr();            // Старт curses mod
     keypad(stdscr, TRUE); // Включаем F1, F2, стрелки и т.д.
@@ -425,8 +464,8 @@ int main() {
             break;
         go(&snake); // Рисуем новую голову
         goTail(&snake); //Рисуем хвост
-        go(&snake2); // Рисуем новую голову
-        goTail(&snake2); //Рисуем хвост
+
+
         if (haveEat(&snake, food)) {
             addTail(&snake);
             printLevel(&snake);
