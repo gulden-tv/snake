@@ -374,6 +374,12 @@ void startMenu()
             mvprintw(10, 30, "   S N A K E    S N A K E    S N A K E     S N A K E     ");
             mvprintw(13, 30, "@**************                              ****************@");
 
+    attron(COLOR_PAIR(2));
+            mvprintw(20, 1, "Snake game rules:");
+	    mvprintw(21, 15, "Use the cursor arrows to change the direction of your snake.");
+	    mvprintw(22, 15, "Eat \"fruit\" (\"$,S,s\"), it will make your snake longer.");
+	    mvprintw(23, 15, "If your snake \"eats\" its tail, the game is over.");
+
     char ch = (int) NULL;
     while(1) {
 		ch = getch();
@@ -407,7 +413,7 @@ int main() {
     raw();                // Откдючаем line buffering
     noecho();            // Отключаем echo() режим при вызове getch
     curs_set(FALSE);    //Отключаем курсор
-    printHelp("  Use arrows for control. Press 'q' for EXIT");
+    printHelp("  Use arrows for control. Press 'q' for EXIT\n If you \"eat\" your tail you lose and the game is over.");
     start_color();
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
